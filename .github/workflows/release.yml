@@ -2,11 +2,16 @@ name: Release Build
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,25 +31,53 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
-      - name: Prepare build files
+      - name: Prepare Signing and Google Services
         run: |
-          # 解码base64编码的keystore文件
-          echo "${{ secrets.KEY_BASE64 }}" | base64 -d > app/app.key
-          
-          # 写入签名配置到local.properties
-          echo "${{ secrets.SIGNING_CONFIG }}" > local.properties
-          
-          # 写入Google Services配置
-          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+          # Create placeholder google-services.json if secret is missing
+          if [ -z "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+            echo '{"project_info":{"project_id":"placeholder","project_number":"0","name":"Placeholder"},"client":[{"client_info":{"mobilesdk_app_id":"1:0:android:placeholder","android_client_info":{"package_name":"me.rerere.rikkahub"}},"oauth_client":[],"api_key":[{"current_key":"placeholder"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}},{"client_info":{"mobilesdk_app_id":"1:0:android:placeholder","android_client_info":{"package_name":"me.rerere.rikkahub.debug"}},"oauth_client":[],"api_key":[{"current_key":"placeholder"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}}]}' > app/google-services.json
+          else
+            echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+          fi
+
+          # Generate Keystore if secret is missing
+          if [ -z "${{ secrets.KEY_BASE64 }}" ]; then
+            echo "No KEY_BASE64 secret found, generating new keystore..."
+            keytool -genkey -v -keystore app.jks -alias sunzc -keyalg RSA -keysize 2048 -validity 10000 -storepass sunzc -keypass sunzc -dname "CN=Sunzc, OU=RikkaHub, O=RikkaHub, L=Unknown, S=Unknown, C=CN"
+          else
+            echo "${{ secrets.KEY_BASE64 }}" | base64 -d > app.jks
+          fi
+
+          # Create local.properties for signing
+          # We use the provided sunzc/sunzc credentials as requested
+          echo "storeFile=../app.jks" > local.properties
+          echo "storePassword=sunzc" >> local.properties
+          echo "keyAlias=sunzc" >> local.properties
+          echo "keyPassword=sunzc" >> local.properties
 
       - name: Gradle Build
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease bundleRelease
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: success()
         with:
           name: artifacts
-          path: app/build/outputs/apk/release/*.apk
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
