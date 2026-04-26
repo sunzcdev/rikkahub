@@ -23,32 +23,7 @@ class UpdateChecker(private val client: OkHttpClient) {
     private val json = Json { ignoreUnknownKeys = true }
 
     fun checkUpdate(): Flow<UiState<UpdateInfo>> = flow {
-        emit(UiState.Loading)
-        emit(
-            UiState.Success(
-                data = try {
-                    val response = client.newCall(
-                        Request.Builder()
-                            .url(API_URL)
-                            .get()
-                            .addHeader(
-                                "User-Agent",
-                                "RikkaHub ${BuildConfig.VERSION_NAME} #${BuildConfig.VERSION_CODE}"
-                            )
-                            .build()
-                    ).await()
-                    if (response.isSuccessful) {
-                        json.decodeFromString<UpdateInfo>(response.body.string())
-                    } else {
-                        throw Exception("Failed to fetch update info")
-                    }
-                } catch (e: Exception) {
-                    throw Exception("Failed to fetch update info", e)
-                }
-            )
-        )
-    }.catch {
-        emit(UiState.Error(it))
+        emit(UiState.Idle)
     }.flowOn(Dispatchers.IO)
 
     fun downloadUpdate(context: Context, download: UpdateDownload) {
