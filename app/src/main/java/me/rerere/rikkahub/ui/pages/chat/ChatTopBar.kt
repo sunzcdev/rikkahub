@@ -114,7 +114,7 @@ fun TopBar(
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = conversation.title.ifBlank { "群聊" },
+                                text = conversation.title.ifBlank { stringResource(R.string.group_chat_title) },
                                 maxLines = 1,
                                 style = MaterialTheme.typography.bodyMedium,
                                 overflow = TextOverflow.Ellipsis,
@@ -221,14 +221,14 @@ fun TopBar(
                     onDismissRequest = { showNewChatMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("新建单人聊天") },
+                        text = { Text(stringResource(R.string.group_chat_new_single_chat)) },
                         onClick = {
                             showNewChatMenu = false
                             onNewChat()
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("新建群聊") },
+                        text = { Text(stringResource(R.string.group_chat_new_group_chat)) },
                         onClick = {
                             showNewChatMenu = false
                             onCreateGroupChat?.invoke()

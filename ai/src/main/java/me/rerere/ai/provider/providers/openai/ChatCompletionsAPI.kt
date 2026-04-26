@@ -372,9 +372,19 @@ class ChatCompletionsAPI(
                     }
 
                     else -> {
+                        // 通用 DeepSeek 兼容处理
+                        if (host.contains("deepseek", ignoreCase = true)) {
+                            put("thinking", buildJsonObject {
+                                put("type", if (!level.isEnabled) "disabled" else "enabled")
+                            })
+                            if (level.isEnabled && level != ReasoningLevel.AUTO) {
+                                put("reasoning_effort", level.effort)
+                            }
+                        }
+
                         // OpenAI 官方
                         // 文档中，completions API 只支持 "low", "medium", "high"
-                        if (level != ReasoningLevel.AUTO) {
+                        if (level != ReasoningLevel.AUTO && level.isEnabled) {
                             put("reasoning_effort", if (level.effort == "none") "low" else level.effort)
                         }
                     }
