@@ -136,6 +136,7 @@ class AutoDiscussManager(
                         try {
                             val participantConversation = conversationRepository.getConversationById(conversationId)
                                 ?: continue
+                            val existingNodeCount = participantConversation.messageNodes.size
 
                             val messages = mutableListOf<UIMessage>()
                             groupChatManager.generateForParticipant(
@@ -150,9 +151,10 @@ class AutoDiscussManager(
                             ).collect { chunk ->
                                 when (chunk) {
                                     is GenerationChunk.Messages -> {
+                                        val newMessages = chunk.messages.drop(existingNodeCount)
                                         messages.clear()
                                         messages.addAll(chunk.messages)
-                                        onMessageGenerated(chunk.messages)
+                                        onMessageGenerated(newMessages)
                                     }
                                 }
                             }

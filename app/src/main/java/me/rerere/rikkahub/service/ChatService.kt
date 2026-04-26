@@ -385,35 +385,9 @@ class ChatService(
                             // Only keep new messages — chunk includes transformed history
                             val newMessages = chunk.messages.drop(existingNodeCount)
                             if (newMessages.isNotEmpty()) {
-                                var updatedConv = conv
-                                for (msg in newMessages) {
-                                    val existingMsgNodeIdx = updatedConv.messageNodes.indexOfLast { node ->
-                                        node.messages.any { it.id == msg.id }
-                                    }
-                                    if (existingMsgNodeIdx >= 0) {
-                                        // Streaming update: replace message in existing node
-                                        val node = updatedConv.messageNodes[existingMsgNodeIdx]
-                                        val msgIdx = node.messages.indexOfFirst { it.id == msg.id }
-                                        updatedConv = updatedConv.copy(
-                                            messageNodes = updatedConv.messageNodes.toMutableList().apply {
-                                                set(existingMsgNodeIdx, node.copy(
-                                                    messages = if (msgIdx >= 0) {
-                                                        node.messages.toMutableList().apply { set(msgIdx, msg) }
-                                                    } else {
-                                                        node.messages + msg
-                                                    },
-                                                    selectIndex = if (msgIdx >= 0) msgIdx else node.messages.size
-                                                ))
-                                            }
-                                        )
-                                    } else {
-                                        // New message from this participant
-                                        updatedConv = updatedConv.copy(
-                                            messageNodes = updatedConv.messageNodes + msg.toMessageNode()
-                                        )
-                                    }
+                                updateConversationState(conversationId) { currentConv ->
+                                    updateConversationWithMessages(currentConv, newMessages)
                                 }
-                                updateConversation(conversationId, updatedConv)
                             }
                         }
                     }
@@ -1572,18 +1546,52 @@ class ChatService(
             conversationId = conversationId,
             rounds = rounds,
             topicText = topicText,
-            onMessageGenerated = { messages ->
-                messages.forEach { message ->
-                    val node = message.toMessageNode()
-                    updateConversationState(conversationId) { conversation ->
-                        conversation.copy(
-                            messageNodes = conversation.messageNodes + node
-                        )
+            onMessageGenerated = { newMessages ->
+                if (newMessages.isNotEmpty()) {
+                    updateConversationState(conversationId) { currentConv ->
+                        updateConversationWithMessages(currentConv, newMessages)
                     }
                 }
             },
             onStateChange = {}
         )
+    }
+
+    private fun updateConversationWithMessages(
+        conversation: Conversation,
+        messages: List<UIMessage>
+    ): Conversation {
+        var updatedConv = conversation
+        for (msg in messages) {
+            val existingMsgNodeIdx = updatedConv.messageNodes.indexOfLast { node ->
+                node.messages.any { it.id == msg.id }
+            }
+            if (existingMsgNodeIdx >= 0) {
+                // Streaming update: replace message in existing node
+                val node = updatedConv.messageNodes[existingMsgNodeIdx]
+                val msgIdx = node.messages.indexOfFirst { it.id == msg.id }
+                updatedConv = updatedConv.copy(
+                    messageNodes = updatedConv.messageNodes.toMutableList().apply {
+                        set(
+                            existingMsgNodeIdx, node.copy(
+                                messages = if (msgIdx >= 0) {
+                                    node.messages.toMutableList().apply { set(msgIdx, msg) }
+                                } else {
+                                    node.messages + msg
+                                },
+                                selectIndex = if (msgIdx >= 0) msgIdx else node.messages.size
+                            )
+                        )
+                    }
+                )
+            } else {
+                // New message
+                updatedConv = updatedConv.copy(
+                    messageNodes = updatedConv.messageNodes + msg.toMessageNode()
+                )
+            }
+        }
+        return updatedConv
     }
 
     fun stopAutoDiscuss() {

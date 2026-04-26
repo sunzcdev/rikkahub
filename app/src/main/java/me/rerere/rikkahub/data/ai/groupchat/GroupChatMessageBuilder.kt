@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.data.ai.groupchat
 
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
@@ -53,15 +55,17 @@ fun getParticipantLabel(
         ?: getModelDisplayName(participant.modelId ?: assistant?.chatModelId)
         ?: participant.assistantId.toString().take(8)
 
-    val sameModelParticipants = allParticipants.filter { p ->
+    val sameNameParticipants = allParticipants.filter { p ->
         if (p.id == participant.id) return@filter false
         val pAssistant = getAssistant(p.assistantId)
-        val pModelId = p.modelId ?: pAssistant?.chatModelId
-        val participantModelId = participant.modelId ?: assistant?.chatModelId
-        pModelId == participantModelId
+        val pName = p.displayName
+            ?: pAssistant?.name?.takeIf { it.isNotBlank() }
+            ?: getModelDisplayName(p.modelId ?: pAssistant?.chatModelId)
+            ?: p.assistantId.toString().take(8)
+        pName == modelName
     }
 
-    if (sameModelParticipants.isNotEmpty()) {
+    if (sameNameParticipants.isNotEmpty()) {
         val index = allParticipants.indexOfFirst { it.id == participant.id } + 1
         return "$modelName #$index"
     }
@@ -156,7 +160,7 @@ fun transformMessageForGroupChat(
                 .firstOrNull()
                 ?.metadata
                 ?.get("participantId")
-                ?.toString()
+                ?.jsonPrimitive?.contentOrNull
                 ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
                 ?.let { getParticipantInfo(it) }
 
