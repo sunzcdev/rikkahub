@@ -77,6 +77,7 @@ fun GroupChatSettingsDialog(
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     val navController = LocalNavController.current
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     var participants by remember(groupChatConfig) {
         mutableStateOf(groupChatConfig.participants.sortedBy { it.order })
@@ -108,7 +109,7 @@ fun GroupChatSettingsDialog(
     fun saveChanges() {
         val enabledCount = participants.count { it.enabled }
         if (enabledCount < 2) {
-            toaster.show("群聊至少需要 2 个参与者", type = com.dokar.sonner.ToastType.Warning)
+            toaster.show(context.getString(R.string.group_chat_min_participants_warning), type = com.dokar.sonner.ToastType.Warning)
             return
         }
 
@@ -142,7 +143,7 @@ fun GroupChatSettingsDialog(
                     IconButton(
                         onClick = { showAddParticipantSheet = true }
                     ) {
-                        Icon(HugeIcons.UserAdd01, "Add Participant")
+                        Icon(HugeIcons.UserAdd01, stringResource(R.string.group_chat_add_participant))
                     }
                 }
 
@@ -220,7 +221,7 @@ fun GroupChatSettingsDialog(
                                         ) {
                                             Icon(
                                                 imageVector = HugeIcons.DragDropVertical,
-                                                contentDescription = "Reorder",
+                                                contentDescription = stringResource(R.string.reorder),
                                                 modifier = Modifier.longPressDraggableHandle(),
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -270,23 +271,21 @@ fun GroupChatSettingsDialog(
                                                 }
                                             )
 
-                                            if (participants.size > 1) {
-                                                IconButton(
-                                                    onClick = {
-                                                        participants = participants.filter { p ->
-                                                            p.id != participant.id
-                                                        }.mapIndexed { index, p ->
-                                                            p.copy(order = index)
+                                                    IconButton(
+                                                        onClick = {
+                                                            participants = participants.filter { p ->
+                                                                p.id != participant.id
+                                                            }.mapIndexed { index, p ->
+                                                                p.copy(order = index)
+                                                            }
                                                         }
+                                                    ) {
+                                                        Icon(
+                                                            HugeIcons.Cancel01,
+                                                            stringResource(R.string.assistant_page_remove),
+                                                            tint = MaterialTheme.colorScheme.error
+                                                        )
                                                     }
-                                                ) {
-                                                    Icon(
-                                                        HugeIcons.Cancel01,
-                                                        "Remove Participant",
-                                                        tint = MaterialTheme.colorScheme.error
-                                                    )
-                                                }
-                                            }
                                         }
                                     }
                                 }
@@ -549,7 +548,7 @@ private fun AddParticipantSheet(
                                     ) {
                                         Icon(
                                             imageVector = HugeIcons.PencilEdit01,
-                                            contentDescription = "Edit Assistant",
+                                            contentDescription = stringResource(R.string.prompt_page_edit),
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }

@@ -1008,6 +1008,11 @@
 
   <string name="group_chat_convert_to_group">Convert to Group Chat</string>
   <string name="group_chat_convert_to_single">Convert to Single Chat</string>
+  <string name="group_chat_new_single_chat">New Single Chat</string>
+  <string name="group_chat_new_group_chat">New Group Chat</string>
+  <string name="group_chat_title">Group Chat</string>
+  <string name="group_chat_min_participants_warning">Group chat requires at least 2 participants</string>
+  <string name="reorder">Reorder</string>
   <string name="group_chat_manage_participants">Manage Participants</string>
 </resources>
 

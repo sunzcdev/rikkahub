@@ -794,10 +794,10 @@ private fun TextInputRow(
             },
             lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 5),
             keyboardOptions = KeyboardOptions(
-                imeAction = if (settings.displaySetting.sendOnEnter) ImeAction.Send else ImeAction.Default
+                imeAction = ImeAction.Send
             ),
             onKeyboardAction = {
-                if (settings.displaySetting.sendOnEnter && !state.isEmpty()) {
+                if (!state.isEmpty()) {
                     onSendMessage()
                 }
             },

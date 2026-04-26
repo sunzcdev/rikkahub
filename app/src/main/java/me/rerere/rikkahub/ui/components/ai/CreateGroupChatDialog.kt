@@ -25,6 +25,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import kotlin.uuid.Uuid
@@ -40,19 +42,19 @@ fun CreateGroupChatDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("新建群聊")
+            Text(stringResource(R.string.group_chat_new_group_chat))
         },
         text = {
             Column {
                 Text(
-                    text = "已选 ${selectedIds.size} 个助手 (至少需要 2 个)",
+                    text = stringResource(R.string.auto_discuss_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
                 if (assistants.isEmpty()) {
                     Text(
-                        text = "暂无可用助手，请先在设置中添加助手",
+                        text = stringResource(R.string.group_chat_no_available_assistants),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -94,7 +96,7 @@ fun CreateGroupChatDialog(
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = assistant.name.ifBlank { "未命名助手" },
+                                    text = assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) },
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                             }
@@ -108,12 +110,12 @@ fun CreateGroupChatDialog(
                 onClick = { onConfirm(selectedIds.toList()) },
                 enabled = selectedIds.size >= 2,
             ) {
-                Text("创建")
+                Text(stringResource(R.string.assistant_page_add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
