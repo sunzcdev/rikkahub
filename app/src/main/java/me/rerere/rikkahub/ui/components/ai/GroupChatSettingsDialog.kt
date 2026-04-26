@@ -82,17 +82,22 @@ fun GroupChatSettingsDialog(
         mutableStateOf(groupChatConfig.participants.sortedBy { it.order })
     }
 
-    val reorderableState = rememberReorderableLazyListState { from, to ->
-        participants = participants.toMutableList().apply {
-            add(to.index, removeAt(from.index))
-        }.mapIndexed { index, participant ->
-            participant.copy(order = index)
+    val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val reorderableState = rememberReorderableLazyListState(
+        lazyListState = lazyListState,
+        onMove = { from, to ->
+            participants = participants.toMutableList().apply {
+                add(to.index, removeAt(from.index))
+            }.mapIndexed { index, participant ->
+                participant.copy(order = index)
+            }
         }
-    }
+    )
 
     fun getAssistantById(id: Uuid): Assistant? =
         settings.assistants.find { it.id == id }
 
+    @Composable
     fun getParticipantLabel(participant: GroupChatParticipant): String {
         val assistant = getAssistantById(participant.assistantId)
         return participant.displayName
@@ -172,7 +177,7 @@ fun GroupChatSettingsDialog(
                         }
                     } else {
                         LazyColumn(
-                            state = reorderableState.lazyListState,
+                            state = lazyListState,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(8.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -222,7 +227,7 @@ fun GroupChatSettingsDialog(
 
                                             UIAvatar(
                                                 name = assistant?.name ?: "?",
-                                                value = assistant?.avatar,
+                                                value = assistant?.avatar ?: me.rerere.rikkahub.data.model.Avatar.Dummy,
                                                 modifier = Modifier.size(36.dp),
                                                 onClick = {
                                                     assistant?.let { ass ->

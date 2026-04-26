@@ -54,9 +54,9 @@ import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.LeftToRightListBullet
 import me.rerere.hugeicons.stroke.Menu03
 import me.rerere.hugeicons.stroke.MessageAdd01
-import me.rerere.hugeicons.stroke.Play01
+import me.rerere.hugeicons.stroke.PlayCircle
 import me.rerere.hugeicons.stroke.Settings03
-import me.rerere.hugeicons.stroke.Square02
+import me.rerere.hugeicons.stroke.Stop
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findProvider
@@ -66,9 +66,11 @@ import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.GroupChatConfig
 import me.rerere.rikkahub.service.ChatError
+import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.components.ai.AutoDiscussProgressBar
 import me.rerere.rikkahub.ui.components.ai.AutoDiscussRoundPickerDialog
 import me.rerere.rikkahub.ui.components.ai.ChatInput
+import me.rerere.rikkahub.ui.components.ai.CreateGroupChatDialog
 import me.rerere.rikkahub.ui.components.ai.GroupChatSettingsDialog
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalToaster
@@ -264,9 +266,8 @@ private fun ChatPageContent(
     val hazeState = rememberHazeState()
 
     var showGroupChatSettings by rememberSaveable { mutableStateOf(false) }
-    val groupChatConfig by remember(conversation) {
-        mutableStateOf(conversation.groupChatConfig)
-    }
+    var showCreateGroupChat by rememberSaveable { mutableStateOf(false) }
+    val groupChatConfig = conversation.groupChatConfig
 
     var showAutoDiscussRoundPicker by rememberSaveable { mutableStateOf(false) }
     val autoDiscussState by vm.getAutoDiscussState().collectAsStateWithLifecycle()
@@ -297,6 +298,12 @@ private fun ChatPageContent(
                     },
                     onOpenGroupChatSettings = {
                         showGroupChatSettings = true
+                    },
+                    onOpenAssistantSettings = {
+                        navController.navigate(Screen.AssistantDetail(id = setting.getCurrentAssistant().id.toString()))
+                    },
+                    onCreateGroupChat = {
+                        showCreateGroupChat = true
                     },
                     onStartAutoDiscuss = {
                         if (autoDiscussState.isRunning) {
@@ -485,6 +492,20 @@ private fun ChatPageContent(
             )
         }
 
+        if (showCreateGroupChat) {
+            CreateGroupChatDialog(
+                assistants = setting.assistants,
+                onDismiss = { showCreateGroupChat = false },
+                onConfirm = { selectedIds ->
+                    showCreateGroupChat = false
+                    scope.launch {
+                        val newId = vm.createGroupChat(selectedIds)
+                        navigateToChatPage(navController, chatId = newId)
+                    }
+                }
+            )
+        }
+
         if (showAutoDiscussRoundPicker) {
             AutoDiscussRoundPickerDialog(
                 onDismiss = { showAutoDiscussRoundPicker = false },
@@ -498,158 +519,4 @@ private fun ChatPageContent(
     }
 }
 
-@Composable
-private fun TopBar(
-    settings: Settings,
-    conversation: Conversation,
-    drawerState: DrawerState,
-    bigScreen: Boolean,
-    previewMode: Boolean,
-    onClickMenu: () -> Unit,
-    onNewChat: () -> Unit,
-    onUpdateTitle: (String) -> Unit,
-    onOpenGroupChatSettings: (() -> Unit)? = null,
-    onStartAutoDiscuss: (() -> Unit)? = null,
-    isAutoDiscussRunning: Boolean = false,
-) {
-    val scope = rememberCoroutineScope()
-    val toaster = LocalToaster.current
-    val titleState = useEditState<String> {
-        onUpdateTitle(it)
-    }
-    val hasValidGroupChat = remember(conversation) {
-        conversation.groupChatConfig?.isValid() == true
-    }
-
-    TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-        navigationIcon = {
-            if (!bigScreen) {
-                IconButton(
-                    onClick = {
-                        scope.launch { drawerState.open() }
-                    }
-                ) {
-                    Icon(HugeIcons.Menu03, "Messages")
-                }
-            }
-        },
-        title = {
-            val editTitleWarning = stringResource(R.string.chat_page_edit_title_warning)
-            Surface(
-                onClick = {
-                    if (conversation.messageNodes.isNotEmpty()) {
-                        titleState.open(conversation.title)
-                    } else {
-                        toaster.show(editTitleWarning, type = ToastType.Warning)
-                    }
-                },
-                color = Color.Transparent,
-            ) {
-                Column {
-                    val assistant = settings.getCurrentAssistant()
-                    val model = settings.getCurrentChatModel()
-                    val provider = model?.findProvider(providers = settings.providers, checkOverwrite = false)
-                    Text(
-                        text = conversation.title.ifBlank { stringResource(R.string.chat_page_new_chat) },
-                        maxLines = 1,
-                        style = MaterialTheme.typography.bodyMedium,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (model != null && provider != null) {
-                        Text(
-                            text = "${assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) }} / ${model.displayName} (${provider.name})",
-                            overflow = TextOverflow.Ellipsis,
-                            maxLines = 1,
-                            color = LocalContentColor.current.copy(0.65f),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 8.sp,
-                            )
-                        )
-                    }
-                }
-            }
-        },
-        actions = {
-            onOpenGroupChatSettings?.let { onOpen ->
-                IconButton(
-                    onClick = onOpen
-                ) {
-                    Icon(HugeIcons.Settings03, "Group Chat Settings")
-                }
-            }
-
-            if (hasValidGroupChat && onStartAutoDiscuss != null) {
-                IconButton(
-                    onClick = onStartAutoDiscuss
-                ) {
-                    if (isAutoDiscussRunning) {
-                        Icon(
-                            HugeIcons.Square02,
-                            "Stop Auto Discuss",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    } else {
-                        Icon(
-                            HugeIcons.Play01,
-                            "Start Auto Discuss",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-
-            IconButton(
-                onClick = {
-                    onClickMenu()
-                }
-            ) {
-                Icon(if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet, "Chat Options")
-            }
-
-            IconButton(
-                onClick = {
-                    onNewChat()
-                }
-            ) {
-                Icon(HugeIcons.MessageAdd01, "New Message")
-            }
-        },
-    )
-    titleState.EditStateContent { title, onUpdate ->
-        AlertDialog(
-            onDismissRequest = {
-                titleState.dismiss()
-            },
-            title = {
-                Text(stringResource(R.string.chat_page_edit_title))
-            },
-            text = {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = onUpdate,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        titleState.confirm()
-                    }
-                ) {
-                    Text(stringResource(R.string.chat_page_save))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        titleState.dismiss()
-                    }
-                ) {
-                    Text(stringResource(R.string.chat_page_cancel))
-                }
-            }
-        )
-    }
 }

@@ -25,6 +25,9 @@ import me.rerere.rikkahub.data.model.GroupChatParticipant
 import me.rerere.rikkahub.data.model.SpeakingOrder
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.utils.applyPlaceholders
+import me.rerere.rikkahub.data.datastore.findModelById
+import me.rerere.rikkahub.data.model.toMessageNode
+import me.rerere.ai.provider.Model
 import kotlin.uuid.Uuid
 
 private const val TAG = "AutoDiscussManager"

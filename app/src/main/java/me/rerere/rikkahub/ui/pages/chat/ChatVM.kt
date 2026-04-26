@@ -401,6 +401,10 @@ class ChatVM(
         }
     }
 
+    suspend fun createGroupChat(assistantIds: List<Uuid>): Uuid {
+        return chatService.createGroupChatConversation(assistantIds)
+    }
+
     fun convertToSingleChat() {
         viewModelScope.launch {
             chatService.convertToSingleChat(_conversationId)
