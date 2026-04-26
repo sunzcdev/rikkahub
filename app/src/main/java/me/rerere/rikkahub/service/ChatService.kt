@@ -362,9 +362,7 @@ class ChatService(
 
         for (participant in targetParticipants) {
             val session = getOrCreateSession(conversationId)
-            if (session.getJob()?.isActive == true && session.getJob()?.isCancelled == false) {
-                continue
-            }
+            val existingNodeCount = getConversationFlow(conversationId).value.messageNodes.size
 
             runCatching {
                 groupChatManager.generateForParticipant(
@@ -383,21 +381,53 @@ class ChatService(
                 ).collect { chunk ->
                     when (chunk) {
                         is GenerationChunk.Messages -> {
-                            val updatedConversation = getConversationFlow(conversationId).value
-                                .updateCurrentMessages(chunk.messages)
-                            updateConversation(conversationId, updatedConversation)
+                            val conv = getConversationFlow(conversationId).value
+                            // Only keep new messages — chunk includes transformed history
+                            val newMessages = chunk.messages.drop(existingNodeCount)
+                            if (newMessages.isNotEmpty()) {
+                                var updatedConv = conv
+                                for (msg in newMessages) {
+                                    val existingMsgNodeIdx = updatedConv.messageNodes.indexOfLast { node ->
+                                        node.messages.any { it.id == msg.id }
+                                    }
+                                    if (existingMsgNodeIdx >= 0) {
+                                        // Streaming update: replace message in existing node
+                                        val node = updatedConv.messageNodes[existingMsgNodeIdx]
+                                        val msgIdx = node.messages.indexOfFirst { it.id == msg.id }
+                                        updatedConv = updatedConv.copy(
+                                            messageNodes = updatedConv.messageNodes.toMutableList().apply {
+                                                set(existingMsgNodeIdx, node.copy(
+                                                    messages = if (msgIdx >= 0) {
+                                                        node.messages.toMutableList().apply { set(msgIdx, msg) }
+                                                    } else {
+                                                        node.messages + msg
+                                                    },
+                                                    selectIndex = if (msgIdx >= 0) msgIdx else node.messages.size
+                                                ))
+                                            }
+                                        )
+                                    } else {
+                                        // New message from this participant
+                                        updatedConv = updatedConv.copy(
+                                            messageNodes = updatedConv.messageNodes + msg.toMessageNode()
+                                        )
+                                    }
+                                }
+                                updateConversation(conversationId, updatedConv)
+                            }
                         }
                     }
                 }
             }.onFailure { e ->
-                if (e !is CancellationException) {
-                    addError(
-                        e,
-                        conversationId,
-                        title = context.getString(R.string.error_title_generation)
-                    )
-                    Logging.log(TAG, "handleGroupChatMessageComplete: $e")
+                if (e is CancellationException) {
+                    throw e
                 }
+                addError(
+                    e,
+                    conversationId,
+                    title = context.getString(R.string.error_title_generation)
+                )
+                Logging.log(TAG, "handleGroupChatMessageComplete: $e")
             }
 
             delay(300)
@@ -1489,6 +1519,29 @@ class ChatService(
         val newConfig = me.rerere.rikkahub.data.model.GroupChatConfig(isGroupChat = false)
         val updatedConversation = conversation.copy(groupChatConfig = newConfig)
         saveConversation(conversationId, updatedConversation)
+    }
+
+    suspend fun createGroupChatConversation(assistantIds: List<Uuid>): Uuid {
+        val conversationId = Uuid.random()
+        val settings = settingsStore.settingsFlow.value
+        val currentAssistant = settings.getCurrentAssistant()
+
+        val participants = assistantIds.mapIndexed { index, assistantId ->
+            me.rerere.rikkahub.data.model.GroupChatParticipant(
+                assistantId = assistantId,
+                order = index,
+            )
+        }
+        val config = groupChatManager.createGroupChatConfig(participants)
+
+        val conversation = Conversation.ofId(
+            id = conversationId,
+            assistantId = currentAssistant.id,
+            newConversation = true
+        ).copy(groupChatConfig = config)
+
+        conversationRepo.insertConversation(conversation)
+        return conversationId
     }
 
     // ---- 托管讨论 ----

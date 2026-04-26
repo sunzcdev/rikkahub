@@ -12,27 +12,44 @@ private val CLOSING_TAG_REGEX = Regex("</think>")
 
 // 部分供应商不会返回reasoning parts, 所以需要这个transformer
 object ThinkTagTransformer : OutputMessageTransformer {
+    private fun processThinkTags(
+        text: String,
+        message: UIMessage,
+        reasoningEnabled: Boolean,
+        finishedAt: kotlin.time.Instant?,
+    ): List<UIMessagePart> {
+        if (!THINKING_REGEX.containsMatchIn(text)) return listOf(UIMessagePart.Text(text = text))
+        val stripped = text.replace(THINKING_REGEX, "")
+        if (!reasoningEnabled) {
+            return listOf(UIMessagePart.Text(text = stripped))
+        }
+        val reasoning = THINKING_REGEX.find(text)?.groupValues?.getOrNull(1)?.trim() ?: ""
+        return listOf(
+            UIMessagePart.Reasoning(
+                reasoning = reasoning,
+                createdAt = message.createdAt.toInstant(timeZone = TimeZone.currentSystemDefault()),
+                finishedAt = finishedAt,
+            ),
+            UIMessagePart.Text(text = stripped),
+        )
+    }
+
     override suspend fun visualTransform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
     ): List<UIMessage> {
+        val reasoningEnabled = ctx.assistant.reasoningLevel.isEnabled
         return messages.map { message ->
             if (message.role == MessageRole.ASSISTANT && message.hasPart<UIMessagePart.Text>()) {
                 message.copy(
                     parts = message.parts.flatMap { part ->
-                        if (part is UIMessagePart.Text && THINKING_REGEX.containsMatchIn(part.text)) {
-                            val stripped = part.text.replace(THINKING_REGEX, "")
-                            val reasoning =
-                                THINKING_REGEX.find(part.text)?.groupValues?.getOrNull(1)?.trim()
-                                    ?: ""
+                        if (part is UIMessagePart.Text) {
                             val hasClosingTag = CLOSING_TAG_REGEX.containsMatchIn(part.text)
-                            listOf(
-                                UIMessagePart.Reasoning(
-                                    reasoning = reasoning,
-                                    createdAt = message.createdAt.toInstant(timeZone = TimeZone.currentSystemDefault()),
-                                    finishedAt = if (hasClosingTag) Clock.System.now() else null,
-                                ),
-                                part.copy(text = stripped),
+                            processThinkTags(
+                                text = part.text,
+                                message = message,
+                                reasoningEnabled = reasoningEnabled,
+                                finishedAt = if (hasClosingTag) Clock.System.now() else null,
                             )
                         } else {
                             listOf(part)
@@ -49,23 +66,18 @@ object ThinkTagTransformer : OutputMessageTransformer {
         ctx: TransformerContext,
         messages: List<UIMessage>,
     ): List<UIMessage> {
+        val reasoningEnabled = ctx.assistant.reasoningLevel.isEnabled
         val now = Clock.System.now()
         return messages.map { message ->
             if (message.role == MessageRole.ASSISTANT && message.hasPart<UIMessagePart.Text>()) {
                 message.copy(
                     parts = message.parts.flatMap { part ->
-                        if (part is UIMessagePart.Text && THINKING_REGEX.containsMatchIn(part.text)) {
-                            val stripped = part.text.replace(THINKING_REGEX, "")
-                            val reasoning =
-                                THINKING_REGEX.find(part.text)?.groupValues?.getOrNull(1)?.trim()
-                                    ?: ""
-                            listOf(
-                                UIMessagePart.Reasoning(
-                                    reasoning = reasoning,
-                                    createdAt = message.createdAt.toInstant(timeZone = TimeZone.currentSystemDefault()),
-                                    finishedAt = now,
-                                ),
-                                part.copy(text = stripped),
+                        if (part is UIMessagePart.Text) {
+                            processThinkTags(
+                                text = part.text,
+                                message = message,
+                                reasoningEnabled = reasoningEnabled,
+                                finishedAt = now,
                             )
                         } else {
                             listOf(part)

@@ -30,8 +30,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.MessageSquare02
-import me.rerere.hugeicons.stroke.Square02
+import me.rerere.hugeicons.stroke.Message02
+import me.rerere.hugeicons.stroke.Stop
 import me.rerere.rikkahub.R
 
 @Composable
@@ -140,7 +140,7 @@ fun AutoDiscussProgressBar(
                         .background(MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(
-                        imageVector = HugeIcons.MessageSquare02,
+                        imageVector = HugeIcons.Message02,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
@@ -181,7 +181,7 @@ fun AutoDiscussProgressBar(
                 shape = RoundedCornerShape(12.dp),
             ) {
                 Icon(
-                    imageVector = HugeIcons.Square02,
+                    imageVector = HugeIcons.Stop,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(16.dp)
