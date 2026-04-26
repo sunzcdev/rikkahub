@@ -66,7 +66,6 @@ jobs:
         with:
           files: |
             app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
           generate_release_notes: true
           draft: false
           prerelease: false
@@ -80,4 +79,3 @@ jobs:
           name: artifacts
           path: |
             app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
