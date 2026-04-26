@@ -98,6 +98,13 @@ import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.input.delete
+import androidx.compose.foundation.text.input.insert
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.SuggestionChip
 import dev.chrisbanes.haze.materials.HazeMaterials
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -124,18 +131,22 @@ import me.rerere.hugeicons.stroke.Video01
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
+import me.rerere.rikkahub.data.ai.groupchat.getParticipantLabel
 import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.getCurrentChatModel
 import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.QuickMessage
 import me.rerere.rikkahub.ui.components.ui.ExtensionSelector
 import me.rerere.rikkahub.ui.components.ui.KeepScreenOn
+import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionCamera
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
 import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
@@ -408,6 +419,7 @@ fun ChatInput(
 
                     TextInputRow(
                         state = state,
+                        conversation = conversation,
                         onSendMessage = { sendMessage() }
                     )
 
@@ -619,6 +631,7 @@ private fun ActionIconButton(
 @Composable
 private fun TextInputRow(
     state: ChatInputState,
+    conversation: Conversation,
     onSendMessage: () -> Unit,
 ) {
     val settings = LocalSettings.current
@@ -632,6 +645,81 @@ private fun TextInputRow(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        // Mentions suggestions
+        val text = state.textContent.text.toString()
+        val selection = state.textContent.selection
+        val isGroupChat = conversation.groupChatConfig.isGroupChat
+
+        val mentionMatch = remember(text, selection, isGroupChat) {
+            if (isGroupChat && selection.collapsed) {
+                val beforeCursor = text.substring(0, selection.start)
+                val lastAtHalf = beforeCursor.lastIndexOf('@')
+                val lastAtFull = beforeCursor.lastIndexOf('＠')
+                val lastAt = maxOf(lastAtHalf, lastAtFull)
+
+                if (lastAt >= 0 && (lastAt == 0 || beforeCursor[lastAt - 1].isWhitespace())) {
+                    val query = beforeCursor.substring(lastAt + 1)
+                    if (!query.contains(' ') && !query.contains('\n')) {
+                        query to lastAt
+                    } else null
+                } else null
+            } else null
+        }
+
+        mentionMatch?.let { (query, atIndex) ->
+            val participants = conversation.groupChatConfig.enabledParticipants
+            val filtered = remember(participants, query) {
+                participants.filter { p ->
+                    val label = getParticipantLabel(
+                        participant = p,
+                        allParticipants = participants,
+                        getAssistant = { id -> settings.assistants.find { it.id == id } },
+                        getModelDisplayName = { id -> id?.let { settings.findModelById(it) }?.displayName ?: "Unknown" }
+                    )
+                    label.contains(query, ignoreCase = true)
+                }
+            }
+
+            if (filtered.isNotEmpty()) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.8f),
+                ) {
+                    LazyRow(
+                        modifier = Modifier.padding(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(filtered) { p ->
+                            val label = getParticipantLabel(
+                                participant = p,
+                                allParticipants = participants,
+                                getAssistant = { id -> settings.assistants.find { it.id == id } },
+                                getModelDisplayName = { id -> id?.let { settings.findModelById(it) }?.displayName ?: "Unknown" }
+                            )
+                            SuggestionChip(
+                                onClick = {
+                                    state.textContent.edit {
+                                        replace(atIndex, selection.start, "@$label ")
+                                    }
+                                },
+                                label = { Text(label) },
+                                icon = {
+                                    UIAvatar(
+                                        name = label,
+                                        value = settings.assistants.find { it.id == p.assistantId }?.avatar ?: Avatar.Dummy,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         if (state.isEditing()) {
             Surface(
                 shape = RoundedCornerShape(16.dp),

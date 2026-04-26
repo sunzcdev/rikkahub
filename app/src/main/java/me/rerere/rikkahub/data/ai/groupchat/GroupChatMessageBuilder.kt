@@ -209,7 +209,8 @@ fun extractMentionedParticipants(
             getModelDisplayName = getModelDisplayName,
         )
 
-        if (content.contains("@$label")) {
+        val mentionRegex = Regex("[@＠]${Regex.escape(label)}(?=\\W|$)")
+        if (mentionRegex.containsMatchIn(content)) {
             mentioned.add(participant.id)
         }
     }
