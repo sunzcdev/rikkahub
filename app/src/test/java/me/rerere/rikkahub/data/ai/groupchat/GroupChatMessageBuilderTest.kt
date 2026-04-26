@@ -451,7 +451,9 @@ class GroupChatMessageBuilderTest {
     private fun createConversation(config: GroupChatConfig): Conversation {
         return Conversation(
             id = Uuid.random(),
+            assistantId = Uuid.random(),
             title = "Test Conversation",
+            messageNodes = emptyList(),
             groupChatConfig = config
         )
     }

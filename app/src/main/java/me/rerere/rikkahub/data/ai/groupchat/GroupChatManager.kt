@@ -214,7 +214,21 @@ class GroupChatManager(
             messages = conversation.currentMessages,
             conversation = conversation,
             selfParticipantId = participant.id,
-            getParticipantInfo = { extractParticipantInfoFromMessage(conversation, it) },
+            getParticipantInfo = { id ->
+                conversation.groupChatConfig.participants.find { it.id == id }?.let { p ->
+                    createParticipantInfo(
+                        participant = p,
+                        getAssistant = getAssistant,
+                        getModelDisplayName = { mid -> mid?.let { getModelById(it) }?.displayName ?: "Unknown" },
+                        allParticipants = allParticipants,
+                    )
+                } ?: run {
+                    val message = conversation.messageNodes
+                        .flatMap { it.messages }
+                        .find { it.id == id }
+                    message?.let { extractParticipantInfoFromMessage(it) }
+                }
+            },
         )
 
         val tools = buildToolsForParticipant(
@@ -251,8 +265,8 @@ class GroupChatManager(
         ).collect { chunk ->
             when (chunk) {
                 is GenerationChunk.Messages -> {
-                    val messagesWithMetadata = chunk.messages.map { message ->
-                        if (message.role == MessageRole.ASSISTANT) {
+                    val messagesWithMetadata = chunk.messages.mapIndexed { index, message ->
+                        if (index >= messagesForGeneration.size && message.role == MessageRole.ASSISTANT) {
                             addParticipantMetadata(message, participantInfo)
                         } else {
                             message
