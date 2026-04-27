@@ -36,7 +36,9 @@ val appModule = module {
     }
 
     single {
-        LocalTools(get(), get())
+        LocalTools(get(), get()) {
+            get<SettingsStore>().settingsFlow.value.amapApiKey
+        }
     }
 
     single {

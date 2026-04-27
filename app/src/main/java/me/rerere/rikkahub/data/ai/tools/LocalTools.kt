@@ -45,9 +45,19 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("ask_user")
     data object AskUser : LocalToolOption()
+
+    @Serializable
+    @SerialName("phone_bridge")
+    data object PhoneBridge : LocalToolOption()
 }
 
-class LocalTools(private val context: Context, private val eventBus: AppEventBus) {
+class LocalTools(
+    private val context: Context,
+    private val eventBus: AppEventBus,
+    private val getAmapApiKey: () -> String?
+) {
+    val phoneBridge by lazy { PhoneBridge(context, eventBus, getAmapApiKey) }
+
     val javascriptTool by lazy {
         Tool(
             name = "eval_javascript",
@@ -320,6 +330,9 @@ class LocalTools(private val context: Context, private val eventBus: AppEventBus
         }
         if (options.contains(LocalToolOption.AskUser)) {
             tools.add(askUserTool)
+        }
+        if (options.contains(LocalToolOption.PhoneBridge)) {
+            tools.add(phoneBridge.tool)
         }
         return tools
     }

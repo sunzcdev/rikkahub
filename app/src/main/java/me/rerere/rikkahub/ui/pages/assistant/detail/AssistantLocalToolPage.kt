@@ -156,6 +156,21 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+
+            item(
+                headlineContent = {
+                    Text(stringResource(R.string.phone_bridge_title))
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.phone_bridge_desc))
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.PhoneBridge),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.PhoneBridge, it) }
+                    )
+                }
+            )
         }
     }
 }

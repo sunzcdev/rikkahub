@@ -1014,5 +1014,9 @@
   <string name="group_chat_min_participants_warning">Group chat requires at least 2 participants</string>
   <string name="reorder">Reorder</string>
   <string name="group_chat_manage_participants">Manage Participants</string>
+  <string name="phone_bridge_title">Phone Hardware Bridge</string>
+  <string name="phone_bridge_desc">Allows AI to access hardware features like GPS, Camera, Vibration, etc.</string>
+  <string name="amap_api_key">Amap API Key</string>
+  <string name="amap_api_key_desc">API Key for Amap (Gaode Maps) location services</string>
 </resources>
 
