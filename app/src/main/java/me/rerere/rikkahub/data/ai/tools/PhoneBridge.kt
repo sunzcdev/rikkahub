@@ -4,9 +4,13 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import com.amap.api.location.AMapLocationClient
+import com.amap.api.location.AMapLocationClientOption
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -19,6 +23,8 @@ import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.event.AppEvent
 import me.rerere.rikkahub.data.event.AppEventBus
+import java.io.File
+import kotlin.coroutines.resume
 
 class PhoneBridge(
     private val context: Context,
@@ -33,10 +39,11 @@ class PhoneBridge(
                 Capabilities:
                 - vibrate: Trigger phone vibration.
                 - make_call: Initiate a phone call to a specified number.
-                - get_location: Get current GPS coordinates (Amap integration).
+                - get_location: Get current GPS coordinates (using Amap).
                 - take_photo: Capture an image using the camera.
                 - open_external_app: Open an app by package name or URL.
-                - file_system: Basic file operations (list, read).
+                - list_files: List contents of a directory (Read-only).
+                - read_file_info: Get metadata/basic info about a file (Read-only).
             """.trimIndent().replace("\n", " "),
             parameters = {
                 InputSchema.Obj(
@@ -50,7 +57,7 @@ class PhoneBridge(
                                 add("take_photo")
                                 add("open_external_app")
                                 add("list_files")
-                                add("read_file")
+                                add("read_file_info")
                             })
                         })
                         put("phone_number", buildJsonObject {
@@ -67,7 +74,7 @@ class PhoneBridge(
                         })
                         put("path", buildJsonObject {
                             put("type", "string")
-                            put("description", "File or directory path for file_system actions")
+                            put("description", "File or directory path for file_system actions. Use '/' for root of allowed storage.")
                         })
                     },
                     required = listOf("action")
@@ -83,8 +90,8 @@ class PhoneBridge(
                     "get_location" -> handleGetLocation()
                     "take_photo" -> handleTakePhoto()
                     "open_external_app" -> handleOpenApp(params["app_identifier"]?.jsonPrimitive?.contentOrNull ?: error("app_identifier is required"))
-                    "list_files" -> handleListFiles(params["path"]?.jsonPrimitive?.contentOrNull ?: ".")
-                    "read_file" -> handleReadFile(params["path"]?.jsonPrimitive?.contentOrNull ?: error("path is required"))
+                    "list_files" -> handleListFiles(params["path"]?.jsonPrimitive?.contentOrNull ?: "/")
+                    "read_file_info" -> handleReadFileInfo(params["path"]?.jsonPrimitive?.contentOrNull ?: error("path is required"))
                     else -> error("Unsupported action: ${action}")
                 }
             }
@@ -128,30 +135,75 @@ class PhoneBridge(
         return listOf(UIMessagePart.Text(payload.toString()))
     }
 
-    private fun handleGetLocation(): List<UIMessagePart> {
-        // Implementation will require Amap SDK integration
-        // For now, return a placeholder or error if API key is missing
+    private suspend fun handleGetLocation(): List<UIMessagePart> {
         val apiKey = getAmapApiKey()
         if (apiKey.isNullOrBlank()) {
-            return listOf(UIMessagePart.Text("{\"error\": \"Amap API Key is not configured in settings.\"}"))
+            return listOf(UIMessagePart.Text("{\"error\": \"Amap API Key is not configured in settings. Go to Settings -> Phone Hardware Bridge to set it.\"}"))
         }
 
-        // Placeholder for real Amap call
-        val payload = buildJsonObject {
-            put("status", "pending")
-            put("message", "Location tracking needs Amap SDK integration and user permission.")
+        return try {
+            AMapLocationClient.setApiKey(apiKey)
+            AMapLocationClient.updatePrivacyShow(context, true, true)
+            AMapLocationClient.updatePrivacyAgree(context, true)
+
+            val location = suspendCancellableCoroutine { continuation ->
+                val client = AMapLocationClient(context)
+                val option = AMapLocationClientOption().apply {
+                    locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
+                    isOnceLocation = true
+                    isNeedAddress = true
+                }
+                client.setLocationOption(option)
+                client.setLocationListener { loc ->
+                    if (loc != null && loc.errorCode == 0) {
+                        continuation.resume(loc)
+                    } else {
+                        continuation.resume(null)
+                    }
+                    client.stopLocation()
+                    client.onDestroy()
+                }
+                client.startLocation()
+
+                continuation.invokeOnCancellation {
+                    client.stopLocation()
+                    client.onDestroy()
+                }
+            }
+
+            if (location != null) {
+                val payload = buildJsonObject {
+                    put("latitude", location.latitude)
+                    put("longitude", location.longitude)
+                    put("address", location.address)
+                    put("poi_name", location.poiName)
+                    put("city", location.city)
+                    put("province", location.province)
+                    put("success", true)
+                }
+                listOf(UIMessagePart.Text(payload.toString()))
+            } else {
+                listOf(UIMessagePart.Text("{\"error\": \"Failed to obtain GPS location. Check permissions and API key.\"}"))
+            }
+        } catch (e: Exception) {
+            listOf(UIMessagePart.Text("{\"error\": \"Location error: ${e.message}\"}"))
         }
-        return listOf(UIMessagePart.Text(payload.toString()))
     }
 
-    private fun handleTakePhoto(): List<UIMessagePart> {
-        // This usually requires a UI callback or AppEvent
-        // eventBus.emit(AppEvent.CaptureImage)
-        val payload = buildJsonObject {
-            put("status", "requested")
-            put("message", "Camera capture triggered via AppEvent.")
+    private suspend fun handleTakePhoto(): List<UIMessagePart> {
+        return suspendCancellableCoroutine { continuation ->
+            eventBus.emit(AppEvent.TakePhoto { uri ->
+                if (uri != null) {
+                    val payload = buildJsonObject {
+                        put("success", true)
+                        put("image_url", uri.toString())
+                    }
+                    continuation.resume(listOf(UIMessagePart.Text(payload.toString()), UIMessagePart.Image(uri.toString())))
+                } else {
+                    continuation.resume(listOf(UIMessagePart.Text("{\"error\": \"User cancelled camera capture or error occurred.\"}")))
+                }
+            })
         }
-        return listOf(UIMessagePart.Text(payload.toString()))
     }
 
     private fun handleOpenApp(id: String): List<UIMessagePart> {
@@ -173,19 +225,45 @@ class PhoneBridge(
         }
     }
 
-    private fun handleListFiles(path: String): List<UIMessagePart> {
-        // Scoped to app internal files or specific public dirs
+    private fun handleListFiles(relativePath: String): List<UIMessagePart> {
+        val root = Environment.getExternalStorageDirectory()
+        val targetDir = if (relativePath == "/" || relativePath.isBlank()) root else File(root, relativePath)
+
+        if (!targetDir.exists() || !targetDir.isDirectory) {
+            return listOf(UIMessagePart.Text("{\"error\": \"Path does not exist or is not a directory.\"}"))
+        }
+
+        val files = targetDir.listFiles()?.map { file ->
+            buildJsonObject {
+                put("name", file.name)
+                put("is_directory", file.isDirectory)
+                put("size", file.length())
+                put("last_modified", file.lastModified())
+            }
+        } ?: emptyList()
+
         val payload = buildJsonObject {
-            put("path", path)
-            put("note", "File system access is restricted for security.")
+            put("current_path", targetDir.absolutePath.replace(root.absolutePath, ""))
+            put("files", buildJsonArray { files.forEach { add(it) } })
         }
         return listOf(UIMessagePart.Text(payload.toString()))
     }
 
-    private fun handleReadFile(path: String): List<UIMessagePart> {
+    private fun handleReadFileInfo(relativePath: String): List<UIMessagePart> {
+        val root = Environment.getExternalStorageDirectory()
+        val file = File(root, relativePath)
+
+        if (!file.exists()) {
+            return listOf(UIMessagePart.Text("{\"error\": \"File not found.\"}"))
+        }
+
         val payload = buildJsonObject {
-            put("path", path)
-            put("error", "Direct file reading is restricted.")
+            put("name", file.name)
+            put("size", file.length())
+            put("last_modified", file.lastModified())
+            put("is_file", file.isFile)
+            put("extension", file.extension)
+            put("note", "File content reading is restricted to metadata for security.")
         }
         return listOf(UIMessagePart.Text(payload.toString()))
     }

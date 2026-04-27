@@ -62,8 +62,10 @@ sqlite-vector = "0.9.92"
 jmdns = "3.6.3"
 slf4j = "2.0.17"
 sqlite-android = "-SNAPSHOT"
+amap-location = "6.4.1"
 
 [libraries]
+amapLocation = { module = "com.amap.api:location", version.ref = "amap-location" }
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraCore" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-media3-common = { module = "androidx.media3:media3-common", version.ref = "media3" }

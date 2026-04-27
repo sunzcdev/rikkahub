@@ -236,6 +236,7 @@ dependencies {
     implementation(libs.quickie.bundled)
     implementation(libs.barcode.scanning)
     implementation(libs.androidx.camera.core)
+    implementation(libs.amapLocation)
 
     // Room
     implementation(libs.androidx.room.runtime)

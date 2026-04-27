@@ -8,7 +8,7 @@ class AppEventBus {
     private val _events = MutableSharedFlow<AppEvent>(extraBufferCapacity = 16)
     val events: SharedFlow<AppEvent> = _events.asSharedFlow()
 
-    suspend fun emit(event: AppEvent) {
-        _events.emit(event)
+    fun emit(event: AppEvent) {
+        _events.tryEmit(event)
     }
 }
