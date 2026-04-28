@@ -210,11 +210,16 @@ class TtsController(
         _playbackState.update { PlaybackState(status = PlaybackStatus.Idle) }
     }
 
-    /** 释放资源 */
+    /** 释放资源 — 安全用于 DI 单例，不取消 SupervisorJob */
     fun dispose() {
         stop()
-        scope.cancel()
         audio.release()
+    }
+
+    /** 重置单例内部状态（不含 AudioPlayer 释放） */
+    fun reset() {
+        stop()
+        audio.clear()
     }
 
     // region 内部：播放调度

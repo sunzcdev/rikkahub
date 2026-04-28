@@ -431,12 +431,15 @@
   <string name="notification_web_server_running">Web Server Running</string>
   <string name="notification_web_server_starting">Starting...</string>
   <string name="notification_web_server_stop">Stop</string>
+  <string name="notification_channel_tts_playback">TTS Playback</string>
   <string name="permission_camera">Camera</string>
   <string name="permission_camera_desc">Camera permission is required to take photos</string>
   <string name="permission_desc_goto_setting">Some permissions have been permanently denied, please go to the app settings to manually enable them:</string>
   <string name="permission_desc_require_permission">In order to provide a better user experience, the app requires the following permissions:</string>
   <string name="permission_diaog_title">Permission Request</string>
   <string name="permission_go_to_settings">Go to Setting</string>
+  <string name="permission_microphone">Microphone</string>
+  <string name="permission_microphone_desc">Microphone permission is required to record voice input</string>
   <string name="permission_notification">Notification</string>
   <string name="permission_notification_desc">Send notifications</string>
   <string name="permission_permanently_denied">Permanently Denied</string>
@@ -958,6 +961,11 @@
   <string name="translator_page_title">Translator</string>
   <string name="translator_page_translate">Translate</string>
   <string name="tts">TTS</string>
+  <string name="tts_pause">Pause</string>
+  <string name="tts_resume">Resume</string>
+  <string name="tts_paused">Paused</string>
+  <string name="tts_stop">Stop</string>
+  <string name="tts_restart">Restart</string>
   <string name="unpin_chat">Unpin the Chat</string>
   <string name="update_card_check_failed">Check update failed</string>
   <string name="update_card_close">Close</string>

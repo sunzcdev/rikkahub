@@ -46,6 +46,7 @@ import me.rerere.rikkahub.utils.toMutableStateFlow
 import me.rerere.search.SearchCommonOptions
 import me.rerere.search.SearchServiceOptions
 import me.rerere.tts.provider.TTSProviderSetting
+import me.rerere.stt.provider.SttProviderSetting
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import kotlin.uuid.Uuid
@@ -119,6 +120,10 @@ class SettingsStore(
         // TTS
         val TTS_PROVIDERS = stringPreferencesKey("tts_providers")
         val SELECTED_TTS_PROVIDER = stringPreferencesKey("selected_tts_provider")
+
+        // STT
+        val STT_PROVIDERS = stringPreferencesKey("stt_providers")
+        val SELECTED_STT_PROVIDER = stringPreferencesKey("selected_stt_provider")
 
         // Web Server
         val WEB_SERVER_ENABLED = booleanPreferencesKey("web_server_enabled")
@@ -209,6 +214,11 @@ class SettingsStore(
                 } ?: emptyList(),
                 selectedTTSProviderId = preferences[SELECTED_TTS_PROVIDER]?.let { Uuid.parse(it) }
                     ?: DEFAULT_SYSTEM_TTS_ID,
+                sttProviders = preferences[STT_PROVIDERS]?.let {
+                    JsonInstant.decodeFromString(it)
+                } ?: emptyList(),
+                selectedSttProviderId = preferences[SELECTED_STT_PROVIDER]?.let { Uuid.parse(it) }
+                    ?: DEFAULT_STT_PROVIDER_ID,
                 modeInjections = preferences[MODE_INJECTIONS]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
@@ -370,6 +380,10 @@ class SettingsStore(
             settings.selectedTTSProviderId?.let {
                 preferences[SELECTED_TTS_PROVIDER] = it.toString()
             } ?: preferences.remove(SELECTED_TTS_PROVIDER)
+            preferences[STT_PROVIDERS] = JsonInstant.encodeToString(settings.sttProviders)
+            settings.selectedSttProviderId?.let {
+                preferences[SELECTED_STT_PROVIDER] = it.toString()
+            } ?: preferences.remove(SELECTED_STT_PROVIDER)
             preferences[MODE_INJECTIONS] = JsonInstant.encodeToString(settings.modeInjections)
             preferences[LOREBOOKS] = JsonInstant.encodeToString(settings.lorebooks)
             preferences[QUICK_MESSAGES] = JsonInstant.encodeToString(settings.quickMessages)
@@ -496,6 +510,8 @@ data class Settings(
     val s3Config: S3Config = S3Config(),
     val ttsProviders: List<TTSProviderSetting> = DEFAULT_TTS_PROVIDERS,
     val selectedTTSProviderId: Uuid = DEFAULT_SYSTEM_TTS_ID,
+    val sttProviders: List<SttProviderSetting> = DEFAULT_STT_PROVIDERS,
+    val selectedSttProviderId: Uuid = DEFAULT_STT_PROVIDER_ID,
     val modeInjections: List<PromptInjection.ModeInjection> = DEFAULT_MODE_INJECTIONS,
     val lorebooks: List<Lorebook> = emptyList(),
     val quickMessages: List<QuickMessage> = emptyList(),
@@ -623,6 +639,12 @@ fun Settings.getSelectedTTSProvider(): TTSProviderSetting? {
     return selectedTTSProviderId?.let { id ->
         ttsProviders.find { it.id == id }
     } ?: ttsProviders.firstOrNull()
+}
+
+fun Settings.getSelectedSTTProvider(): SttProviderSetting? {
+    return selectedSttProviderId?.let { id ->
+        sttProviders.find { it.id == id }
+    } ?: sttProviders.firstOrNull()
 }
 
 fun Model.findProvider(providers: List<ProviderSetting>, checkOverwrite: Boolean = true): ProviderSetting? {
@@ -777,6 +799,15 @@ private val DEFAULT_TTS_PROVIDERS = listOf(
         model = "gpt-4o-mini-tts",
         voice = "alloy",
     )
+)
+
+val DEFAULT_STT_PROVIDER_ID = Uuid.parse("6e8c2f51-3d4a-4b7e-9c1d-2f5a8b7e3c1a")
+private val DEFAULT_STT_PROVIDERS = listOf(
+    SttProviderSetting.OpenAIWhisper(
+        id = Uuid.parse("a17c3e5b-8d2f-4a6b-9e3c-1d5f7a8b2c4e"),
+        name = "AiHubMix",
+        baseUrl = "https://aihubmix.com/v1",
+    ),
 )
 
 internal val DEFAULT_ASSISTANTS_IDS = DEFAULT_ASSISTANTS.map { it.id }

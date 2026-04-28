@@ -96,3 +96,7 @@ Built with Jetpack Compose, Kotlin, and follows Material Design 3 principles.
 - Extend base `Provider` class
 - Implement required API methods following existing patterns
 - Support for streaming responses via SSE
+
+### 代码提交
+- 每次修改前都首先创建分支，分支策略是master是主分支，发布版本的分支。dev是测试分支，修复bug则从master拉fix_***分支，添加功能从master拉feature_xxx分支。
+- 每次修改完成后先自测，自测完成后合并到dev。功能合并测试完成后，向用户发起master合并请求，用户同意后，合并master并给出tag标签

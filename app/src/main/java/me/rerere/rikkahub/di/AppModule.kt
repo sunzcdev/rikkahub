@@ -21,6 +21,7 @@ import me.rerere.rikkahub.utils.EmojiUtils
 import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.UpdateChecker
 import me.rerere.rikkahub.web.WebServerManager
+import me.rerere.stt.provider.SttManager
 import me.rerere.tts.provider.TTSManager
 import org.koin.dsl.module
 
@@ -55,6 +56,17 @@ val appModule = module {
 
     single {
         TTSManager(get())
+    }
+
+    single {
+        me.rerere.tts.controller.TtsController(
+            context = get(),
+            ttsManager = get(),
+        )
+    }
+
+    single {
+        SttManager()
     }
 
     single {

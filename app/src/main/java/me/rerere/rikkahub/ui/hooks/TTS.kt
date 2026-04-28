@@ -1,27 +1,27 @@
 package me.rerere.rikkahub.ui.hooks
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.rerere.tts.model.PlaybackState
+import me.rerere.tts.model.PlaybackStatus
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.getSelectedTTSProvider
 import me.rerere.rikkahub.utils.stripMarkdown
-import me.rerere.tts.model.TTSResponse
-import me.rerere.tts.provider.TTSManager
 import me.rerere.tts.provider.TTSProviderSetting
-import me.rerere.tts.controller.TtsController
 import org.koin.compose.koinInject
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -120,11 +120,8 @@ private class CustomTtsStateImpl(
     private val settingsStore: SettingsStore
 ) : CustomTtsState, KoinComponent {
 
-    private val ttsManager by inject<TTSManager>()
-    private val controller by lazy { me.rerere.tts.controller.TtsController(context, ttsManager) }
-
-    private val scope = CoroutineScope(Dispatchers.Main)
-    private var currentJob: Job? = null
+    private val controller by inject<me.rerere.tts.controller.TtsController>()
+    private val serviceScope = CoroutineScope(Dispatchers.Main)
 
     override val isAvailable: StateFlow<Boolean> get() = controller.isAvailable
     override val isSpeaking: StateFlow<Boolean> get() = controller.isSpeaking
@@ -133,17 +130,23 @@ private class CustomTtsStateImpl(
     override val totalChunks: StateFlow<Int> get() = controller.totalChunks
     override val playbackState: StateFlow<PlaybackState> get() = controller.playbackState
 
+    init {
+        observePlaybackForService()
+    }
+
     fun updateProvider(provider: TTSProviderSetting?) {
         controller.setProvider(provider)
     }
 
     override fun speak(text: String, flushCalled: Boolean) {
         val processed = text.stripMarkdown()
+        context.startForegroundService(Intent(context, me.rerere.rikkahub.service.TTSForegroundService::class.java))
         controller.speak(processed, flushCalled)
     }
 
     override fun stop() {
         controller.stop()
+        context.stopService(Intent(context, me.rerere.rikkahub.service.TTSForegroundService::class.java))
     }
 
     override fun pause() {
@@ -169,7 +172,23 @@ private class CustomTtsStateImpl(
     }
 
     override fun cleanup() {
-        controller.dispose()
-        currentJob = null
+        controller.stop()
+        serviceScope.cancel()
+    }
+
+    private fun observePlaybackForService() {
+        serviceScope.launch {
+            controller.playbackState
+                .map { it.status }
+                .distinctUntilChanged()
+                .collect { status ->
+                    when (status) {
+                        PlaybackStatus.Ended, PlaybackStatus.Idle -> {
+                            context.stopService(Intent(context, me.rerere.rikkahub.service.TTSForegroundService::class.java))
+                        }
+                        else -> { /* no-op */ }
+                    }
+                }
+        }
     }
 }

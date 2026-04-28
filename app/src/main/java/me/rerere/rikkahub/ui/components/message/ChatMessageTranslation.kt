@@ -79,7 +79,8 @@ fun LanguageSelectionDialog(
     fun getLanguageDisplayName(locale: Locale): String {
         val configuration = LocalConfiguration.current
         val currentLocale = remember(configuration) {
-            configuration.locales.getOrNull(0) ?: Locale.getDefault()
+            if (configuration.locales.isEmpty()) Locale.getDefault()
+            else configuration.locales[0]
         }
         return when (locale) {
             Locale.SIMPLIFIED_CHINESE -> stringResource(R.string.language_simplified_chinese)
