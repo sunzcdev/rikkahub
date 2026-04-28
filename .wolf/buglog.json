@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "bugs": [
+    {
+      "id": "bug-001",
+      "timestamp": "2026-04-28",
+      "error_message": "NonObservableLocale: Reading locale in a non-observable way in a composable function at ChatMessageTranslation.kt:89",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTranslation.kt",
+      "root_cause": "Locale.getDefault() called directly in @Composable function — not observable, no recomposition on locale change",
+      "fix": "Replaced Locale.getDefault() with LocalConfiguration.current.locales.getOrNull(0), wrapped in remember(configuration) for recomposition",
+      "tags": ["lint", "compose", "locale"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28"
+    }
+  ]
+}
