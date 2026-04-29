@@ -67,6 +67,7 @@ private fun SillyTavernImporter(
     val filesManager: FilesManager = koinInject()
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
+    val aiImportFailed = stringResource(R.string.assistant_importer_import_failed)
     var isLoading by remember { mutableStateOf(false) }
 
     val jsonPickerLauncher = rememberLauncherForActivityResult(
@@ -86,7 +87,7 @@ private fun SillyTavernImporter(
                         )
                     }.onFailure { exception ->
                         exception.printStackTrace()
-                        toaster.show(exception.message ?: context.getString(R.string.assistant_importer_import_failed))
+                        toaster.show(exception.message ?: aiImportFailed)
                     }
                 } finally {
                     isLoading = false
@@ -112,7 +113,7 @@ private fun SillyTavernImporter(
                         )
                     }.onFailure { exception ->
                         exception.printStackTrace()
-                        toaster.show(exception.message ?: context.getString(R.string.assistant_importer_import_failed))
+                        toaster.show(exception.message ?: aiImportFailed)
                     }
                 } finally {
                     isLoading = false

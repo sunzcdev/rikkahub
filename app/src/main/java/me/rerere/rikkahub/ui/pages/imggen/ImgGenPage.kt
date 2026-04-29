@@ -454,21 +454,20 @@ private fun ImageGalleryScreen(
                                             )
                                         }
 
+                                        val saveSuccessMsg = stringResource(R.string.imggen_page_image_saved_success)
+                                        val saveFailedMsg = stringResource(R.string.imggen_page_save_failed)
                                         IconButton(
                                             onClick = {
                                                 scope.launch {
                                                     try {
                                                         filesManager.saveMessageImage(context, "file://${it.filePath}")
                                                         toaster.show(
-                                                            message = context.getString(R.string.imggen_page_image_saved_success),
+                                                            message = saveSuccessMsg,
                                                             type = ToastType.Success
                                                         )
                                                     } catch (e: Exception) {
                                                         toaster.show(
-                                                            message = context.getString(
-                                                                R.string.imggen_page_save_failed,
-                                                                e.message
-                                                            ),
+                                                            message = String.format(saveFailedMsg, e.message),
                                                             type = ToastType.Error
                                                         )
                                                     }

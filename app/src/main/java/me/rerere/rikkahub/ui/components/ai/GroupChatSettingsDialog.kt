@@ -77,7 +77,7 @@ fun GroupChatSettingsDialog(
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     val navController = LocalNavController.current
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val minParticipantsWarning = stringResource(R.string.group_chat_min_participants_warning)
 
     var participants by remember(groupChatConfig) {
         mutableStateOf(groupChatConfig.participants.sortedBy { it.order })
@@ -109,7 +109,7 @@ fun GroupChatSettingsDialog(
     fun saveChanges() {
         val enabledCount = participants.count { it.enabled }
         if (enabledCount < 2) {
-            toaster.show(context.getString(R.string.group_chat_min_participants_warning), type = com.dokar.sonner.ToastType.Warning)
+            toaster.show(minParticipantsWarning, type = com.dokar.sonner.ToastType.Warning)
             return
         }
 

@@ -222,6 +222,7 @@ fun ChatInput(
 
     val context = LocalContext.current
     val filesManager: FilesManager = koinInject()
+    val unsupportedFileType = stringResource(R.string.chat_input_unsupported_file_type)
 
     // Camera launcher
     var cameraOutputUri by remember { mutableStateOf<Uri?>(null) }
@@ -365,7 +366,7 @@ fun ChatInput(
                         UIMessagePart.Document(url = localUri.toString(), fileName = fileName, mime = mime)
                     } else {
                         toaster.show(
-                            context.getString(R.string.chat_input_unsupported_file_type, fileName),
+                            String.format(unsupportedFileType, fileName),
                             type = ToastType.Error
                         )
                         null

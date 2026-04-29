@@ -121,10 +121,11 @@ fun UpdateCard(vm: ChatVM) {
             }
         }
         if (showDetail) {
+            val updateCardDownloading = stringResource(R.string.update_card_downloading)
             val downloadHandler = useThrottle<UpdateDownload>(500) { item ->
                 vm.updateChecker.downloadUpdate(context, item)
                 showDetail = false
-                toaster.show(context.getString(R.string.update_card_downloading), type = ToastType.Info)
+                toaster.show(updateCardDownloading, type = ToastType.Info)
             }
             ModalBottomSheet(
                 onDismissRequest = { showDetail = false },

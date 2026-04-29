@@ -262,7 +262,7 @@ private fun ChatPageContent(
 ) {
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val selectModelMsg = stringResource(R.string.model_list_select_model)
     var previewMode by rememberSaveable { mutableStateOf(false) }
     val hazeState = rememberHazeState()
 
@@ -333,7 +333,7 @@ private fun ChatPageContent(
                     },
                     onSendClick = {
                         if (currentChatModel == null) {
-                            toaster.show(context.getString(R.string.model_list_select_model), type = ToastType.Error)
+                            toaster.show(selectModelMsg, type = ToastType.Error)
                             return@ChatInput
                         }
                         if (inputState.isEditing()) {

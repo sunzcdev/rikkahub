@@ -44,6 +44,9 @@ fun ImportExportTab(
     val toaster = LocalToaster.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val importBackupSuccess = stringResource(R.string.backup_page_backup_success)
+    val importRestoreFailed = stringResource(R.string.backup_page_restore_failed)
+    val importRestoreSuccess = stringResource(R.string.backup_page_restore_success)
     var isExporting by remember { mutableStateOf(false) }
     var isRestoring by remember { mutableStateOf(false) }
 
@@ -72,13 +75,13 @@ fun ImportExportTab(
                     exportFile.delete()
 
                     toaster.show(
-                        context.getString(R.string.backup_page_backup_success),
+                        importBackupSuccess,
                         type = ToastType.Success
                     )
                 }.onFailure { e ->
                     e.printStackTrace()
                     toaster.show(
-                        context.getString(R.string.backup_page_restore_failed, e.message ?: ""),
+                        String.format(importRestoreFailed, e.message ?: ""),
                         type = ToastType.Error
                     )
                 }
@@ -152,14 +155,14 @@ fun ImportExportTab(
                     }
 
                     toaster.show(
-                        context.getString(R.string.backup_page_restore_success),
+                        importRestoreSuccess,
                         type = ToastType.Success
                     )
                     onShowRestartDialog()
                 }.onFailure { e ->
                     e.printStackTrace()
                     toaster.show(
-                        context.getString(R.string.backup_page_restore_failed, e.message ?: ""),
+                        String.format(importRestoreFailed, e.message ?: ""),
                         type = ToastType.Error
                     )
                 }

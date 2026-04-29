@@ -68,7 +68,9 @@ fun SkillsPage() {
     val skills by vm.skills.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val toaster = LocalToaster.current
-    val context = LocalContext.current
+    val skillsPageSaveFailed = stringResource(R.string.skills_page_save_failed)
+    val skillsPageImportSuccess = stringResource(R.string.skills_page_import_success)
+    val skillsPageImportFailed = stringResource(R.string.skills_page_import_failed)
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var showImportDialog by rememberSaveable { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<SkillMetadata?>(null) }
@@ -152,7 +154,7 @@ fun SkillsPage() {
                 vm.saveSkill(name, content) { success ->
                     showAddDialog = false
                     if (!success) {
-                        toaster.show(context.getString(R.string.skills_page_save_failed))
+                        toaster.show(skillsPageSaveFailed)
                     }
                 }
             },
@@ -166,9 +168,9 @@ fun SkillsPage() {
                 vm.importSkillFromGitHub(repoUrl) { success, message ->
                     showImportDialog = false
                     if (success) {
-                        toaster.show(context.getString(R.string.skills_page_import_success, message))
+                        toaster.show(String.format(skillsPageImportSuccess, message))
                     } else {
-                        toaster.show(context.getString(R.string.skills_page_import_failed, message))
+                        toaster.show(String.format(skillsPageImportFailed, message))
                     }
                 }
             },

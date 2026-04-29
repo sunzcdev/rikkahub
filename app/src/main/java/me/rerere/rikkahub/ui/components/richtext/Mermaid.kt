@@ -68,6 +68,8 @@ fun Mermaid(
     val context = LocalContext.current
     val activity = LocalActivity.current
     val toaster = LocalToaster.current
+    val mermaidExportSuccess = stringResource(R.string.mermaid_export_success)
+    val mermaidExportFailed = stringResource(R.string.mermaid_export_failed)
 
     var contentHeight by remember { mutableIntStateOf(mermaidHeightCache.getIfPresent(code) ?: 150) }
     val height = with(density) {
@@ -99,13 +101,13 @@ fun Mermaid(
                         }
                     }
                     toaster.show(
-                        context.getString(R.string.mermaid_export_success),
+                        mermaidExportSuccess,
                         type = ToastType.Success
                     )
                 }.onFailure {
                     it.printStackTrace()
                     toaster.show(
-                        context.getString(R.string.mermaid_export_failed),
+                        mermaidExportFailed,
                         type = ToastType.Error
                     )
                 }
