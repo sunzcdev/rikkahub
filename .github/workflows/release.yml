@@ -43,6 +43,7 @@ jobs:
           # Generate Keystore if secret is missing
           if [ -z "${{ secrets.KEY_BASE64 }}" ]; then
             echo "No KEY_BASE64 secret found, generating new keystore..."
+            rm -f app.jks
             keytool -genkey -v -keystore app.jks -alias sunzc -keyalg RSA -keysize 2048 -validity 10000 -storepass sunzc123 -keypass sunzc123 -dname "CN=Sunzc, OU=RikkaHub, O=RikkaHub, L=Unknown, S=Unknown, C=CN"
           else
             echo "${{ secrets.KEY_BASE64 }}" | base64 -d > app.jks
