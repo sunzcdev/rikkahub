@@ -227,3 +227,17 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-04-29 20:46
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 20:47 | Edited .github/workflows/release.yml | inline fix | ~61 |
+| 20:47 | Edited .github/workflows/release.yml | 3→3 lines | ~49 |
+
+## Session: 2026-04-29 12:47
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:47 | Fixed keytool password < 6 chars in release.yml | .github/workflows/release.yml | Changed storepass/keypass from "sunzc" to "sunzc123" | ~25 |
+| 12:47 | Updated buglog bug-022 with resolution | .wolf/buglog.json | Marked resolved | ~10 |

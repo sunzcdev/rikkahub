@@ -340,6 +340,23 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-04-29T08:11:00.000Z"
+    },
+    {
+      "id": "bug-022",
+      "timestamp": "2026-04-29T12:47:39.131Z",
+      "error_message": "keytool error: Key password must be at least 6 characters",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "keytool -keypass sunzc (5 chars) below 6-char minimum",
+      "fix": "Changed all 4 password refs from \"sunzc\" to \"sunzc123\" (storepass, keypass, storePassword, keyPassword)",
+      "tags": [
+        "ci",
+        "keytool",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T12:47:39.131Z",
+      "resolved": true
     }
   ]
 }
