@@ -59,7 +59,7 @@ jobs:
       - name: Gradle Build
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease
+          ./gradlew assembleRelease bundleRelease -PfirebaseCrashlytics.disableUpload=true
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
