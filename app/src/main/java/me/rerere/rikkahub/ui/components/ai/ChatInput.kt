@@ -150,6 +150,7 @@ import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionCamera
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
 import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
+import me.rerere.rikkahub.ui.components.voice.VoiceInputButton
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.context.LocalToaster
@@ -174,6 +175,7 @@ fun ChatInput(
     enableSearch: Boolean,
     onToggleSearch: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    onVoiceResult: ((String) -> Unit)? = null,
     onUpdateChatModel: (Model) -> Unit,
     onUpdateAssistant: (Assistant) -> Unit,
     onUpdateSearchService: (Int) -> Unit,
@@ -220,6 +222,7 @@ fun ChatInput(
 
     val context = LocalContext.current
     val filesManager: FilesManager = koinInject()
+    val unsupportedFileType = stringResource(R.string.chat_input_unsupported_file_type)
 
     // Camera launcher
     var cameraOutputUri by remember { mutableStateOf<Uri?>(null) }
@@ -363,7 +366,7 @@ fun ChatInput(
                         UIMessagePart.Document(url = localUri.toString(), fileName = fileName, mime = mime)
                     } else {
                         toaster.show(
-                            context.getString(R.string.chat_input_unsupported_file_type, fileName),
+                            String.format(unsupportedFileType, fileName),
                             type = ToastType.Error
                         )
                         null
@@ -553,6 +556,15 @@ fun ChatInput(
                                 )
                             }
                         }
+
+                        // Voice input button
+                        VoiceInputButton(
+                            onVoiceResult = { text ->
+                                state.setMessageText(text)
+                                dismissExpand()
+                                onSendClick()
+                            }
+                        )
                     }
                 }
             }

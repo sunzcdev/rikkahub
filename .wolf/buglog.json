@@ -8,10 +8,338 @@
       "file": "app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTranslation.kt",
       "root_cause": "Locale.getDefault() called directly in @Composable function — not observable, no recomposition on locale change",
       "fix": "Replaced Locale.getDefault() with LocalConfiguration.current.locales.getOrNull(0), wrapped in remember(configuration) for recomposition",
-      "tags": ["lint", "compose", "locale"],
+      "tags": [
+        "lint",
+        "compose",
+        "locale"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-28"
+    },
+    {
+      "id": "bug-002",
+      "timestamp": "2026-04-28T15:20:37.726Z",
+      "error_message": "Significant refactor of ",
+      "file": ".omc/plans/voice-input-background-tts.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 9→10 lines (2 removed) | Also: - `AppModule.kt` 添加 TtsController 提供者定义; - `RikkaHubApp.kt` 初始化 TtsController（应用 onCreate） | Also: - CustomTtsStateImpl 监听播放状态，自动启动/停止 TTSForegroundS; - 使用 `Intent` 启动 Service：`Intent(context, TTSForeg | Also: - 麦克风按钮（HugeIcons.Mic），位于输入框右侧发送按钮旁; - RECORD_AUDIO 权限自动请求（复用 PermissionManager）",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-04-28T15:21:34.663Z"
+    },
+    {
+      "id": "bug-003",
+      "timestamp": "2026-04-28T15:21:34.913Z",
+      "error_message": "Incorrect value in code",
+      "file": ".omc/plans/voice-input-background-tts.md",
+      "root_cause": "Had `SELECTED_STT_PROVIDER`",
+      "fix": "Changed to `STT_PROVIDERS`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T15:21:34.913Z"
+    },
+    {
+      "id": "bug-004",
+      "timestamp": "2026-04-28T15:25:41.138Z",
+      "error_message": "Incorrect value in code",
+      "file": "app/build.gradle.kts",
+      "root_cause": "Had \":common\"",
+      "fix": "Changed to \":stt\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "kts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T15:25:41.138Z"
+    },
+    {
+      "id": "bug-005",
+      "timestamp": "2026-04-28T15:25:53.372Z",
+      "error_message": "Incorrect value in code",
+      "file": "app/src/main/AndroidManifest.xml",
+      "root_cause": "Had \"android.permission.CAMERA\"",
+      "fix": "Changed to \"android.permission.RECORD_AUDIO\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T15:25:53.372Z"
+    },
+    {
+      "id": "bug-006",
+      "timestamp": "2026-04-28T15:26:39.266Z",
+      "error_message": "Significant refactor of ",
+      "file": "tts/src/main/java/me/rerere/tts/controller/TtsController.kt",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 6→11 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T15:26:39.266Z"
+    },
+    {
+      "id": "bug-007",
+      "timestamp": "2026-04-28T15:27:08.400Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/hooks/TTS.kt",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 25→16 lines (9 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T15:27:08.400Z"
+    },
+    {
+      "id": "bug-008",
+      "timestamp": "2026-04-28T15:29:43.150Z",
+      "error_message": "Incorrect value in code",
+      "file": "app/src/main/res/values/strings.xml",
+      "root_cause": "Had \"permission_notification\"",
+      "fix": "Changed to \"permission_microphone\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T15:29:43.150Z"
+    },
+    {
+      "id": "bug-009",
+      "timestamp": "2026-04-28T15:49:36.935Z",
+      "error_message": "Wrong reference: permissions should be PermissionMicrophone",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/voice/VoiceInputButton.kt",
+      "root_cause": "Used \"permissions\" instead of \"PermissionMicrophone\"",
+      "fix": "Changed permissions → PermissionMicrophone",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-04-28T15:55:32.880Z"
+    },
+    {
+      "id": "bug-010",
+      "timestamp": "2026-04-28T16:36:34.775Z",
+      "error_message": "Missing guard clause",
+      "file": "app/src/main/java/me/rerere/rikkahub/utils/AudioRecorder.kt",
+      "root_cause": "No early return/throw for edge case: record == null",
+      "fix": "Added guard clause: if (record == null)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T16:36:34.775Z"
+    },
+    {
+      "id": "bug-011",
+      "timestamp": "2026-04-28T16:36:40.926Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/main/java/me/rerere/rikkahub/utils/AudioRecorder.kt",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 9→12 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T16:36:40.926Z"
+    },
+    {
+      "id": "bug-012",
+      "timestamp": "2026-04-28T16:38:22.204Z",
+      "error_message": "Wrong reference: getValue should be DisposableEffect",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/voice/VoiceInputButton.kt",
+      "root_cause": "Used \"getValue\" instead of \"DisposableEffect\"",
+      "fix": "Changed getValue → DisposableEffect",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T16:38:22.204Z"
+    },
+    {
+      "id": "bug-013",
+      "timestamp": "2026-04-28T23:58:53.769Z",
+      "error_message": "Wrong condition in logic",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/pages/setting/SettingProviderPage.kt",
+      "root_cause": "Condition was: if (Locale.getDefault()",
+      "fix": "Changed to: if (LocalConfiguration.current.locales[0].language == )",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T23:58:53.769Z"
+    },
+    {
+      "id": "bug-014",
+      "timestamp": "2026-04-28T23:59:21.546Z",
+      "error_message": "Wrong reference: LocalContext should be LocalActivity",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatList.kt",
+      "root_cause": "Used \"LocalContext\" instead of \"LocalActivity\"",
+      "fix": "Changed LocalContext → LocalActivity",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T23:59:21.547Z"
+    },
+    {
+      "id": "bug-015",
+      "timestamp": "2026-04-29T00:04:05.802Z",
+      "error_message": "Incorrect value in code",
+      "file": "app/src/main/res/values-zh/strings.xml",
+      "root_cause": "Had \"permission_camera\"",
+      "fix": "Changed to \"notification_channel_tts_playback\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T00:04:05.802Z"
+    },
+    {
+      "id": "bug-016",
+      "timestamp": "2026-04-29T00:05:05.385Z",
+      "error_message": "Wrong reference: context should be skillsPageSaveFailed",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/pages/extensions/SkillsPage.kt",
+      "root_cause": "Used \"context\" instead of \"skillsPageSaveFailed\"",
+      "fix": "Changed context → skillsPageSaveFailed",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T00:05:05.385Z"
+    },
+    {
+      "id": "bug-017",
+      "timestamp": "2026-04-29T00:05:54.751Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/pages/backup/tabs/S3Tab.kt",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 7→4 lines (4 removed) | Also: context.getString(; R.string.backup_page_restore_failed,",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-29T00:06:01.131Z"
+    },
+    {
+      "id": "bug-018",
+      "timestamp": "2026-04-29T00:06:39.640Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/pages/backup/tabs/WebDavTab.kt",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 7→4 lines (4 removed) | Also: context.getString(; R.string.backup_page_restore_failed,",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-29T00:06:46.417Z"
+    },
+    {
+      "id": "bug-019",
+      "timestamp": "2026-04-29T00:07:48.182Z",
+      "error_message": "Wrong reference: context should be importFailedMsg",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/ui/TextArea.kt",
+      "root_cause": "Used \"context\" instead of \"importFailedMsg\"",
+      "fix": "Changed context → importFailedMsg",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T00:07:48.182Z"
+    },
+    {
+      "id": "bug-020",
+      "timestamp": "2026-04-29T00:08:24.477Z",
+      "error_message": "Wrong reference: context should be aiImportFailed",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/pages/assistant/detail/AssistantImporter.kt",
+      "root_cause": "Used \"context\" instead of \"aiImportFailed\"",
+      "fix": "Changed context → aiImportFailed",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T00:08:24.477Z"
+    },
+    {
+      "id": "bug-021",
+      "timestamp": "2026-04-29T08:11:00.000Z",
+      "error_message": "90 lint errors in lintDebug — NonObservableLocale, ContextCastToActivity, LocalContextGetResourceValueCall, MissingTranslation",
+      "file": "multiple files",
+      "root_cause": "New code used Locale.getDefault() in composable, LocalContext as Activity, context.getString() instead of stringResource(), and new strings missing from locale files",
+      "fix": "Batch fix: 3 NonObservableLocale → LocalConfiguration, 1 ContextCastToActivity → LocalActivity, ~27 LocalContextGetResourceValueCall → stringResource(), ~49 MissingTranslation added to ru/ko/ja/zh/zh-rTW",
+      "tags": [
+        "lint",
+        "compose",
+        "localization"
+      ],
+      "related_bugs": [
+        "bug-001",
+        "bug-013",
+        "bug-014"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T08:11:00.000Z"
     }
   ]
 }
