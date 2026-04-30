@@ -1026,5 +1026,9 @@
   <string name="phone_bridge_desc">Allows AI to access hardware features like GPS, Camera, Vibration, etc.</string>
   <string name="amap_api_key">Amap API Key</string>
   <string name="amap_api_key_desc">API Key for Amap (Gaode Maps) location services</string>
+
+  <string name="chat_settings">Chat Settings</string>
+  <string name="participant_disabled">Disabled</string>
+  <string name="search_chat_messages">Search Chat Messages</string>
 </resources>
 

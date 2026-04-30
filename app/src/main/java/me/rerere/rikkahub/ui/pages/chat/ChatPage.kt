@@ -70,8 +70,8 @@ import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.components.ai.AutoDiscussProgressBar
 import me.rerere.rikkahub.ui.components.ai.AutoDiscussRoundPickerDialog
 import me.rerere.rikkahub.ui.components.ai.ChatInput
+import me.rerere.rikkahub.ui.components.ai.ChatSettingsBottomSheet
 import me.rerere.rikkahub.ui.components.ai.CreateGroupChatDialog
-import me.rerere.rikkahub.ui.components.ai.GroupChatSettingsDialog
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.context.Navigator
@@ -266,7 +266,7 @@ private fun ChatPageContent(
     var previewMode by rememberSaveable { mutableStateOf(false) }
     val hazeState = rememberHazeState()
 
-    var showGroupChatSettings by rememberSaveable { mutableStateOf(false) }
+    var showChatSettings by rememberSaveable { mutableStateOf(false) }
     var showCreateGroupChat by rememberSaveable { mutableStateOf(false) }
     val groupChatConfig = conversation.groupChatConfig
 
@@ -298,10 +298,10 @@ private fun ChatPageContent(
                         vm.updateTitle(it)
                     },
                     onOpenGroupChatSettings = {
-                        showGroupChatSettings = true
+                        showChatSettings = true
                     },
                     onOpenAssistantSettings = {
-                        navController.navigate(Screen.AssistantDetail(id = setting.getCurrentAssistant().id.toString()))
+                        showChatSettings = true
                     },
                     onCreateGroupChat = {
                         showCreateGroupChat = true
@@ -480,15 +480,18 @@ private fun ChatPageContent(
                 )
             }
 
-        if (showGroupChatSettings) {
-            GroupChatSettingsDialog(
+        if (showChatSettings) {
+            ChatSettingsBottomSheet(
                 settings = setting,
                 currentAssistant = setting.getCurrentAssistant(),
+                conversationId = conversation.id,
                 groupChatConfig = groupChatConfig,
-                onDismiss = { showGroupChatSettings = false },
+                onDismiss = { showChatSettings = false },
                 onUpdateConfig = { newConfig ->
                     vm.setGroupChatConfig(newConfig)
-                    showGroupChatSettings = false
+                },
+                onNavigateToSearch = {
+                    navController.navigate(Screen.MessageSearch)
                 }
             )
         }

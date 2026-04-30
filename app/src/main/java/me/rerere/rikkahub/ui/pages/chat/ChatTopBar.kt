@@ -167,19 +167,6 @@ fun TopBar(
             }
         },
         actions = {
-            // Settings button — always visible
-            IconButton(
-                onClick = {
-                    if (hasValidGroupChat) {
-                        onOpenGroupChatSettings?.invoke()
-                    } else {
-                        onOpenAssistantSettings?.invoke()
-                    }
-                }
-            ) {
-                Icon(HugeIcons.Settings03, "Settings")
-            }
-
             if (hasValidGroupChat && onStartAutoDiscuss != null) {
                 IconButton(
                     onClick = onStartAutoDiscuss
@@ -208,7 +195,6 @@ fun TopBar(
                 Icon(if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet, "Chat Options")
             }
 
-            // New Chat button with dropdown menu
             var showNewChatMenu by remember { mutableStateOf(false) }
             Box {
                 IconButton(
@@ -235,6 +221,18 @@ fun TopBar(
                         }
                     )
                 }
+            }
+
+            IconButton(
+                onClick = {
+                    if (hasValidGroupChat) {
+                        onOpenGroupChatSettings?.invoke()
+                    } else {
+                        onOpenAssistantSettings?.invoke()
+                    }
+                }
+            ) {
+                Icon(HugeIcons.Settings03, "Settings")
             }
         },
     )
