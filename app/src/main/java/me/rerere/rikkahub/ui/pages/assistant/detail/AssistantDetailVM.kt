@@ -22,6 +22,7 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Tag
+import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import kotlin.uuid.Uuid
 
@@ -33,6 +34,7 @@ class AssistantDetailVM(
     private val memoryRepository: MemoryRepository,
     private val filesManager: FilesManager,
     private val skillManager: SkillManager,
+    private val conversationRepo: ConversationRepository,
 ) : ViewModel() {
     private val assistantId = Uuid.parse(id)
 
@@ -190,6 +192,24 @@ class AssistantDetailVM(
     fun deleteMemory(memory: AssistantMemory) {
         viewModelScope.launch {
             memoryRepository.deleteMemory(id = memory.id)
+        }
+    }
+
+    fun deleteAssistant() {
+        viewModelScope.launch {
+            val current = assistant.value
+            // cleanup files
+            (current.avatar as? Avatar.Image)?.let { filesManager.deleteChatFiles(listOf(it.url.toUri())) }
+            current.background?.let { filesManager.deleteChatFiles(listOf(it.toUri())) }
+
+            val settings = settings.value
+            settingsStore.update(
+                settings.copy(
+                    assistants = settings.assistants.filter { it.id != current.id }
+                )
+            )
+            memoryRepository.deleteMemoriesOfAssistant(current.id.toString())
+            conversationRepo.deleteConversationOfAssistant(current.id)
         }
     }
 

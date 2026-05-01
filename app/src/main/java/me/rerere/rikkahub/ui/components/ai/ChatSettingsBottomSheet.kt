@@ -8,19 +8,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,7 +53,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.DragDropVertical
-import me.rerere.hugeicons.stroke.People01
+import me.rerere.hugeicons.stroke.UserAdd01
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.rikkahub.R
@@ -89,6 +85,7 @@ fun ChatSettingsBottomSheet(
     val toaster = LocalToaster.current
     val navController = LocalNavController.current
     val minParticipantsWarning = stringResource(R.string.group_chat_min_participants_warning)
+    val context = LocalContext.current
 
     val isGroupChat = groupChatConfig.isValid()
 
@@ -139,12 +136,14 @@ fun ChatSettingsBottomSheet(
     fun getAssistantById(id: Uuid): Assistant? =
         settings.assistants.find { it.id == id }
 
-    @Composable
-    fun getParticipantLabel(participant: GroupChatParticipant): String {
-        val assistant = getAssistantById(participant.assistantId)
-        return participant.displayName
-            ?: assistant?.name?.ifBlank { stringResource(R.string.assistant_page_default_assistant) }
-            ?: "Participant ${participant.order + 1}"
+    val participantLabels: Map<Uuid, String> = remember(participants) {
+        participants.associate { participant ->
+            val assistant = getAssistantById(participant.assistantId)
+            val label = participant.displayName
+                ?: assistant?.name?.ifBlank { context.getString(R.string.assistant_page_default_assistant) }
+                ?: "Participant ${participant.order + 1}"
+            participant.id to label
+        }
     }
 
     fun saveChanges() {
@@ -215,7 +214,7 @@ fun ChatSettingsBottomSheet(
                 item {
                     SettingSection(
                         title = stringResource(R.string.group_chat_manage_participants),
-                        icon = HugeIcons.People01
+                        icon = HugeIcons.UserAdd01
                     )
 
                     Spacer(Modifier.height(8.dp))
@@ -223,7 +222,7 @@ fun ChatSettingsBottomSheet(
                     ParticipantListCard(
                         participants = participants,
                         getAssistantById = ::getAssistantById,
-                        getParticipantLabel = { getParticipantLabel(it) },
+                        participantLabels = participantLabels,
                         reorderableState = reorderableState,
                         isGroupChat = isGroupChat,
                         onAddClick = { showAddParticipantSheet = true },
@@ -244,7 +243,7 @@ fun ChatSettingsBottomSheet(
                     item {
                         SettingSection(
                             title = stringResource(R.string.group_chat_speaking_order),
-                            icon = Icons.Default.List
+                            icon = HugeIcons.Settings03
                         )
 
                         Spacer(Modifier.height(8.dp))
@@ -258,7 +257,7 @@ fun ChatSettingsBottomSheet(
                     item {
                         SettingSection(
                             title = stringResource(R.string.auto_discuss_rounds),
-                            icon = Icons.Default.Refresh
+                            icon = HugeIcons.Settings03
                         )
 
                         Spacer(Modifier.height(8.dp))
@@ -272,7 +271,7 @@ fun ChatSettingsBottomSheet(
                     item {
                         SettingSection(
                             title = stringResource(R.string.group_chat_custom_prompt),
-                            icon = Icons.Default.Edit
+                            icon = HugeIcons.Settings03
                         )
 
                         Spacer(Modifier.height(8.dp))
@@ -293,7 +292,7 @@ fun ChatSettingsBottomSheet(
                 item {
                     SettingSection(
                         title = stringResource(R.string.chat_page_search_chats),
-                        icon = Icons.Default.Search
+                        icon = HugeIcons.Search01
                     )
 
                     Spacer(Modifier.height(8.dp))
@@ -326,7 +325,7 @@ fun ChatSettingsBottomSheet(
                             )
                             Spacer(Modifier.weight(1f))
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                imageVector = HugeIcons.Settings03,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -458,7 +457,7 @@ private fun SettingSection(
 private fun ParticipantListCard(
     participants: List<GroupChatParticipant>,
     getAssistantById: (Uuid) -> Assistant?,
-    getParticipantLabel: (GroupChatParticipant) -> String,
+    participantLabels: Map<Uuid, String>,
     reorderableState: sh.calvin.reorderable.ReorderableLazyListState,
     isGroupChat: Boolean,
     onAddClick: () -> Unit,
@@ -493,21 +492,29 @@ private fun ParticipantListCard(
                 )
             }
         } else {
-            Column {
-                participants.forEachIndexed { index, participant ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp)
+            ) {
+                itemsIndexed(
+                    items = participants,
+                    key = { _, p -> p.id }
+                ) { index, participant ->
                     val assistant = getAssistantById(participant.assistantId)
 
                     ReorderableItem(
                         state = reorderableState,
-                        key = participant.id
-                    ) { isDragging ->
+                        key = participant.id,
+                    ) { isDragging: Boolean ->
                         ParticipantItem(
                             participant = participant,
                             assistant = assistant,
-                            label = getParticipantLabel(participant),
+                            label = participantLabels[participant.id] ?: "?",
                             isDragging = isDragging,
                             isGroupChat = isGroupChat,
                             isLast = index == participants.lastIndex,
+                            dragHandleModifier = if (isGroupChat) Modifier.longPressDraggableHandle() else Modifier,
                             onEnabledChange = { enabled ->
                                 val updated = participants.map { p ->
                                     if (p.id == participant.id) {
@@ -569,6 +576,7 @@ private fun ParticipantItem(
     isDragging: Boolean,
     isGroupChat: Boolean,
     isLast: Boolean,
+    dragHandleModifier: Modifier = Modifier,
     onEnabledChange: (Boolean) -> Unit,
     onRemove: () -> Unit,
     onAvatarClick: () -> Unit,
@@ -594,7 +602,7 @@ private fun ParticipantItem(
                     contentDescription = stringResource(R.string.reorder),
                     modifier = Modifier
                         .size(18.dp)
-                        .longPressDraggableHandle(),
+                        .then(dragHandleModifier),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -730,7 +738,7 @@ private fun AutoDiscussRoundsSelector(
             )
             Spacer(Modifier.weight(1f))
             Icon(
-                imageVector = Icons.Default.ArrowDropDown,
+                imageVector = HugeIcons.Settings03,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )

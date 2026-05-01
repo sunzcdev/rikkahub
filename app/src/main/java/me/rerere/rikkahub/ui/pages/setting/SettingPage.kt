@@ -47,6 +47,7 @@ import me.rerere.hugeicons.stroke.Book01
 import me.rerere.hugeicons.stroke.Book03
 import me.rerere.hugeicons.stroke.Bookshelf01
 import me.rerere.hugeicons.stroke.Brain02
+import me.rerere.hugeicons.stroke.ChartColumn
 import me.rerere.hugeicons.stroke.Clapping01
 import me.rerere.hugeicons.stroke.Database02
 import me.rerere.hugeicons.stroke.Developer
@@ -306,6 +307,20 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                             }
                         },
                         headlineContent = { Text(stringResource(R.string.setting_page_chat_storage)) },
+                    )
+                }
+            }
+
+            item("statsSettings") {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text("统计数据") },
+                ) {
+                    item(
+                        onClick = { navController.navigate(Screen.Stats) },
+                        leadingContent = { Icon(HugeIcons.ChartColumn, null) },
+                        supportingContent = { Text("查看聊天和使用统计数据") },
+                        headlineContent = { Text("统计数据") },
                     )
                 }
             }

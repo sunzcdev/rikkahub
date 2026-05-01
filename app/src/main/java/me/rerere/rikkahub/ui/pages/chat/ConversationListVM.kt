@@ -19,7 +19,7 @@ import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDate
 import java.time.ZoneId
 
-class ChatDrawerVM(
+class ConversationListVM(
     private val context: Application,
     settingsStore: SettingsStore,
     conversationRepo: ConversationRepository,
