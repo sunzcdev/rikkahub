@@ -117,6 +117,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingPage
 import me.rerere.rikkahub.ui.pages.setting.SettingProviderDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingProviderPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSearchPage
+import me.rerere.rikkahub.ui.pages.setting.SettingSTTPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTTSPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
@@ -428,6 +429,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingSearchPage()
                             }
 
+                            entry<Screen.SettingSTT> {
+                                SettingSTTPage()
+                            }
+
                             entry<Screen.SettingTTS> {
                                 SettingTTSPage()
                             }
@@ -617,6 +622,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingSearch : Screen
+
+    @Serializable
+    data object SettingSTT : Screen
 
     @Serializable
     data object SettingTTS : Screen

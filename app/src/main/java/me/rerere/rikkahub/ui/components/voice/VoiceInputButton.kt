@@ -84,23 +84,29 @@ fun VoiceInputButton(
                     )
                 }
             }
-            .pointerInput(voiceState) {
-                if (voiceState != VoiceInputState.Idle) return@pointerInput
+            .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
-                        // Request permission first
-                        micPermissionState.requestPermission(Manifest.permission.RECORD_AUDIO)
-                        val granted = micPermissionState.permissionStates[Manifest.permission.RECORD_AUDIO]
-                        if (granted == PermissionStatus.Granted) {
-                            scope.launch {
-                                val result = audioRecorder.startRecording()
-                                if (result.isSuccess) {
-                                    voiceState = VoiceInputState.Recording
-                                }
+                        if (voiceState != VoiceInputState.Idle) return@detectTapGestures
+
+                        val micStatus = micPermissionState.permissionStates[Manifest.permission.RECORD_AUDIO]
+                        if (micStatus != PermissionStatus.Granted) {
+                            // First tap: request permission. User presses again after granting.
+                            micPermissionState.requestPermission(Manifest.permission.RECORD_AUDIO)
+                            tryAwaitRelease()
+                            return@detectTapGestures
+                        }
+
+                        // Permission granted — start recording
+                        scope.launch {
+                            val result = audioRecorder.startRecording()
+                            if (result.isSuccess) {
+                                voiceState = VoiceInputState.Recording
                             }
                         }
-                        // Wait for release
+
                         tryAwaitRelease()
+
                         // On release — transcribe
                         if (voiceState == VoiceInputState.Recording) {
                             voiceState = VoiceInputState.Processing

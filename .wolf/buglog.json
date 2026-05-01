@@ -357,6 +357,38 @@
       "occurrences": 1,
       "last_seen": "2026-04-29T12:47:39.131Z",
       "resolved": true
+    },
+    {
+      "id": "bug-023",
+      "timestamp": "2026-05-01T06:35:14.839Z",
+      "error_message": "Wrong reference: SettingTTSPage should be SettingSTTPage",
+      "file": "app/src/main/java/me/rerere/rikkahub/RouteActivity.kt",
+      "root_cause": "Used \"SettingTTSPage\" instead of \"SettingSTTPage\"",
+      "fix": "Changed SettingTTSPage → SettingSTTPage",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-01T06:35:14.839Z"
+    },
+    {
+      "id": "bug-024",
+      "timestamp": "2026-05-01T06:37:26.923Z",
+      "error_message": "Wrong reference: onPress should be detectTapGestures",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/voice/VoiceInputButton.kt",
+      "root_cause": "Used \"onPress\" instead of \"detectTapGestures\"",
+      "fix": "Changed onPress → detectTapGestures",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-01T06:37:26.923Z"
     }
   ]
 }

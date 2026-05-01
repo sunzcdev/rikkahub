@@ -238,6 +238,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_search_service)) },
                     )
                     item(
+                        onClick = { navController.navigate(Screen.SettingSTT) },
+                        leadingContent = { Icon(HugeIcons.AiMagic, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_stt_service_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_stt_service)) },
+                    )
+                    item(
                         onClick = { navController.navigate(Screen.SettingTTS) },
                         leadingContent = { Icon(HugeIcons.Megaphone01, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_tts_service_desc)) },

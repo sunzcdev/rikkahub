@@ -743,6 +743,8 @@
   <string name="setting_page_sponsor_alert_dismiss">Not Now</string>
   <string name="setting_page_sponsor_alert_title">Support the Developer</string>
   <string name="setting_page_theme_setting">Theme Settings</string>
+  <string name="setting_page_stt_service">Speech-to-Text Service</string>
+  <string name="setting_page_stt_service_desc">Configure speech-to-text service providers</string>
   <string name="setting_page_tts_service">Text-to-Speech Service</string>
   <string name="setting_page_tts_service_desc">Configure text-to-speech service providers</string>
   <string name="setting_page_tts_settings">TTS Settings</string>
@@ -880,6 +882,31 @@
   <string name="setting_tts_page_voice_name">Voice Name</string>
   <string name="setting_tts_page_voice_name_description">Name of the voice</string>
   <string name="setting_tts_page_voice_name_placeholder">Kore</string>
+  <string name="setting_stt_page_add">Add</string>
+  <string name="setting_stt_page_add_provider">Add STT Provider</string>
+  <string name="setting_stt_page_add_provider_content_description">Add STT Provider</string>
+  <string name="setting_stt_page_api_key">API Key</string>
+  <string name="setting_stt_page_api_key_description">Your provider API key</string>
+  <string name="setting_stt_page_api_key_placeholder_openai">sk-...</string>
+  <string name="setting_stt_page_api_key_placeholder_gemini">AIza...</string>
+  <string name="setting_stt_page_base_url">Base URL</string>
+  <string name="setting_stt_page_base_url_description">API base URL endpoint</string>
+  <string name="setting_stt_page_base_url_placeholder">https://api.openai.com/v1</string>
+  <string name="setting_stt_page_edit_provider">Edit Provider</string>
+  <string name="setting_stt_page_model">Model</string>
+  <string name="setting_stt_page_model_description">STT model to use</string>
+  <string name="setting_stt_page_model_placeholder_whisper">whisper-1</string>
+  <string name="setting_stt_page_model_placeholder_gemini">gemini-2.5-flash</string>
+  <string name="setting_stt_page_more_options_content_description">More options</string>
+  <string name="setting_stt_page_name">Name</string>
+  <string name="setting_stt_page_name_description">Custom name for this STT provider</string>
+  <string name="setting_stt_page_name_placeholder">Enter provider name</string>
+  <string name="setting_stt_page_provider_gemini">Gemini</string>
+  <string name="setting_stt_page_provider_openai">OpenAI Whisper</string>
+  <string name="setting_stt_page_provider_type">Provider Type</string>
+  <string name="setting_stt_page_provider_type_description">Select the STT provider type</string>
+  <string name="setting_stt_page_selected">Selected</string>
+  <string name="setting_stt_page_title">Speech-to-Text</string>
   <string name="settings">Settings</string>
   <string name="share">Share</string>
   <string name="share_handler_page_title">Select an Assistant</string>
@@ -982,7 +1009,6 @@
   <string name="reasoning_xhigh">XHigh</string>
   <string name="reasoning_picker_title">Adjust Model Thinking Depth</string>
   <string name="reasoning_picker_hint">Not all models support depth adjustment. Refer to the model and provider documentation.</string>
-
   <string name="group_chat_settings">Group Chat Settings</string>
   <string name="group_chat_participants">Participants</string>
   <string name="group_chat_no_participants">No participants yet. Add assistants to start a group chat.</string>
@@ -1001,7 +1027,6 @@
   <string name="group_chat_custom_name">Custom Name (Optional)</string>
   <string name="group_chat_custom_name_placeholder">Leave empty to use assistant name</string>
   <string name="group_chat_add">Add</string>
-
   <string name="auto_discuss_title">Auto Discussion</string>
   <string name="auto_discuss_start">Start Auto Discuss</string>
   <string name="auto_discuss_stop">Stop Auto Discuss</string>
@@ -1013,7 +1038,6 @@
   <string name="auto_discuss_hint_no_messages">Enter a topic to start the auto discussion. The AI models will discuss this topic for the selected number of rounds.</string>
   <string name="auto_discuss_running">Auto Discussion Running</string>
   <string name="auto_discuss_progress">Round %d of %d</string>
-
   <string name="group_chat_convert_to_group">Convert to Group Chat</string>
   <string name="group_chat_convert_to_single">Convert to Single Chat</string>
   <string name="group_chat_new_single_chat">New Single Chat</string>
@@ -1026,7 +1050,6 @@
   <string name="phone_bridge_desc">Allows AI to access hardware features like GPS, Camera, Vibration, etc.</string>
   <string name="amap_api_key">Amap API Key</string>
   <string name="amap_api_key_desc">API Key for Amap (Gaode Maps) location services</string>
-
   <string name="chat_settings">Chat Settings</string>
   <string name="participant_disabled">Disabled</string>
   <string name="search_chat_messages">Search Chat Messages</string>

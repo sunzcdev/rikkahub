@@ -241,3 +241,37 @@
 |------|--------|---------|---------|--------|
 | 12:47 | Fixed keytool password < 6 chars in release.yml | .github/workflows/release.yml | Changed storepass/keypass from "sunzc" to "sunzc123" | ~25 |
 | 12:47 | Updated buglog bug-022 with resolution | .wolf/buglog.json | Marked resolved | ~10 |
+| 13:37 | Created .omc/test-plan-voice-input-tts.md | — | ~2579 |
+| 13:56 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/ai/ChatSettingsBottomSheet.kt | getString() → stringResource() | ~135 |
+| 14:08 | Edited app/src/main/res/values-zh/strings.xml | 2→5 lines | ~61 |
+| 14:08 | Edited app/src/main/res/values-zh-rTW/strings.xml | 2→5 lines | ~61 |
+| 14:08 | Edited app/src/main/res/values-ja/strings.xml | 2→5 lines | ~63 |
+| 14:08 | Edited app/src/main/res/values-ru/strings.xml | 2→5 lines | ~74 |
+| 14:08 | Edited app/src/main/res/values-ko-rKR/strings.xml | 2→5 lines | ~63 |
+
+## Session: 2026-05-01 14:22
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 14:33 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/voice/VoiceInputButton.kt | modified pointerInput() | ~798 |
+| 14:33 | Edited app/src/main/res/values/strings.xml | 2→4 lines | ~92 |
+| 14:34 | Edited app/src/main/res/values/strings.xml | expanded (+25 lines) | ~530 |
+| 14:35 | Created app/src/main/java/me/rerere/rikkahub/ui/pages/setting/components/STTProviderConfigure.kt | — | ~2310 |
+| 14:35 | Created app/src/main/java/me/rerere/rikkahub/ui/pages/setting/SettingSTTPage.kt | — | ~4468 |
+| 14:35 | Edited app/src/main/java/me/rerere/rikkahub/RouteActivity.kt | added 1 import(s) | ~47 |
+| 14:35 | Edited app/src/main/java/me/rerere/rikkahub/RouteActivity.kt | 3→7 lines | ~72 |
+| 14:35 | Edited app/src/main/java/me/rerere/rikkahub/RouteActivity.kt | 2→5 lines | ~29 |
+| 14:35 | Edited app/src/main/java/me/rerere/rikkahub/ui/pages/setting/SettingPage.kt | expanded (+6 lines) | ~255 |
+| 14:37 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/voice/VoiceInputButton.kt | inline fix | ~7 |
+| 14:42 | Edited app/src/main/res/values-zh/strings.xml | expanded (+27 lines) | ~517 |
+| 14:44 | Session end: 11 writes across 6 files (VoiceInputButton.kt, strings.xml, STTProviderConfigure.kt, SettingSTTPage.kt, RouteActivity.kt) | 17 reads | ~29732 tok |
+
+## Session: 2026-05-01 16:10
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-01 16:11
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
