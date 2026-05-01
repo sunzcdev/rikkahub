@@ -1,47 +1,28 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import android.net.Uri
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.currentWindowDpSize
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import dev.chrisbanes.haze.rememberHazeState
@@ -49,17 +30,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessagePart
-import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.Cancel01
-import me.rerere.hugeicons.stroke.LeftToRightListBullet
-import me.rerere.hugeicons.stroke.Menu03
-import me.rerere.hugeicons.stroke.MessageAdd01
-import me.rerere.hugeicons.stroke.PlayCircle
-import me.rerere.hugeicons.stroke.Settings03
-import me.rerere.hugeicons.stroke.Stop
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.getCurrentChatModel
 import me.rerere.rikkahub.data.files.FilesManager
@@ -70,14 +42,12 @@ import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.components.ai.AutoDiscussProgressBar
 import me.rerere.rikkahub.ui.components.ai.AutoDiscussRoundPickerDialog
 import me.rerere.rikkahub.ui.components.ai.ChatInput
+import me.rerere.rikkahub.ui.components.ai.ChatSettingsBottomSheet
 import me.rerere.rikkahub.ui.components.ai.CreateGroupChatDialog
-import me.rerere.rikkahub.ui.components.ai.GroupChatSettingsDialog
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.context.Navigator
 import me.rerere.rikkahub.ui.hooks.ChatInputState
-import me.rerere.rikkahub.ui.hooks.EditStateContent
-import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.utils.base64Decode
 import me.rerere.rikkahub.utils.navigateToChatPage
 import org.koin.androidx.compose.koinViewModel
@@ -103,23 +73,6 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
     val currentChatModel by vm.currentChatModel.collectAsStateWithLifecycle()
     val enableWebSearch by vm.enableWebSearch.collectAsStateWithLifecycle()
     val errors by vm.errors.collectAsStateWithLifecycle()
-
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val softwareKeyboardController = LocalSoftwareKeyboardController.current
-
-    // Handle back press when drawer is open
-    BackHandler(enabled = drawerState.isOpen) {
-        scope.launch {
-            drawerState.close()
-        }
-    }
-
-    // Hide keyboard when drawer is open
-    LaunchedEffect(drawerState.isOpen) {
-        if (drawerState.isOpen) {
-            softwareKeyboardController?.hide()
-        }
-    }
 
     val windowAdaptiveInfo = currentWindowDpSize()
     val isBigScreen =
@@ -173,72 +126,49 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
         }
     }
 
-    when {
-        isBigScreen -> {
-            PermanentNavigationDrawer(
-                drawerContent = {
-                    ChatDrawerContent(
-                        navController = navController,
-                        current = conversation,
-                        vm = vm,
-                        settings = setting
-                    )
-                }
-            ) {
-                ChatPageContent(
-                    inputState = inputState,
-                    loadingJob = loadingJob,
-                    processingStatus = processingStatus,
-                    setting = setting,
-                    conversation = conversation,
-                    drawerState = drawerState,
+    if (isBigScreen) {
+        PermanentNavigationDrawer(
+            drawerContent = {
+                ChatDrawerContent(
                     navController = navController,
+                    current = conversation,
                     vm = vm,
-                    chatListState = chatListState,
-                    enableWebSearch = enableWebSearch,
-                    currentChatModel = currentChatModel,
-                    bigScreen = true,
-                    errors = errors,
-                    onDismissError = { vm.dismissError(it) },
-                    onClearAllErrors = { vm.clearAllErrors() },
+                    settings = setting
                 )
             }
+        ) {
+            ChatPageContent(
+                inputState = inputState,
+                loadingJob = loadingJob,
+                processingStatus = processingStatus,
+                setting = setting,
+                conversation = conversation,
+                navController = navController,
+                vm = vm,
+                chatListState = chatListState,
+                enableWebSearch = enableWebSearch,
+                currentChatModel = currentChatModel,
+                errors = errors,
+                onDismissError = { vm.dismissError(it) },
+                onClearAllErrors = { vm.clearAllErrors() },
+            )
         }
-
-        else -> {
-            ModalNavigationDrawer(
-                drawerState = drawerState,
-                drawerContent = {
-                    ChatDrawerContent(
-                        navController = navController,
-                        current = conversation,
-                        vm = vm,
-                        settings = setting
-                    )
-                }
-            ) {
-                ChatPageContent(
-                    inputState = inputState,
-                    loadingJob = loadingJob,
-                    processingStatus = processingStatus,
-                    setting = setting,
-                    conversation = conversation,
-                    drawerState = drawerState,
-                    navController = navController,
-                    vm = vm,
-                    chatListState = chatListState,
-                    enableWebSearch = enableWebSearch,
-                    currentChatModel = currentChatModel,
-                    bigScreen = false,
-                    errors = errors,
-                    onDismissError = { vm.dismissError(it) },
-                    onClearAllErrors = { vm.clearAllErrors() },
-                )
-            }
-            BackHandler(drawerState.isOpen) {
-                scope.launch { drawerState.close() }
-            }
-        }
+    } else {
+        ChatPageContent(
+            inputState = inputState,
+            loadingJob = loadingJob,
+            processingStatus = processingStatus,
+            setting = setting,
+            conversation = conversation,
+            navController = navController,
+            vm = vm,
+            chatListState = chatListState,
+            enableWebSearch = enableWebSearch,
+            currentChatModel = currentChatModel,
+            errors = errors,
+            onDismissError = { vm.dismissError(it) },
+            onClearAllErrors = { vm.clearAllErrors() },
+        )
     }
 }
 
@@ -248,9 +178,7 @@ private fun ChatPageContent(
     loadingJob: Job?,
     processingStatus: String? = null,
     setting: Settings,
-    bigScreen: Boolean,
     conversation: Conversation,
-    drawerState: DrawerState,
     navController: Navigator,
     vm: ChatVM,
     chatListState: LazyListState,
@@ -266,7 +194,7 @@ private fun ChatPageContent(
     var previewMode by rememberSaveable { mutableStateOf(false) }
     val hazeState = rememberHazeState()
 
-    var showGroupChatSettings by rememberSaveable { mutableStateOf(false) }
+    var showChatSettings by rememberSaveable { mutableStateOf(false) }
     var showCreateGroupChat by rememberSaveable { mutableStateOf(false) }
     val groupChatConfig = conversation.groupChatConfig
 
@@ -283,37 +211,15 @@ private fun ChatPageContent(
         Scaffold(
             topBar = {
                 TopBar(
-                    settings = setting,
                     conversation = conversation,
-                    bigScreen = bigScreen,
-                    drawerState = drawerState,
-                    previewMode = previewMode,
-                    onNewChat = {
-                        navigateToChatPage(navController)
+                    assistants = setting.assistants,
+                    onBack = { navController.popBackStack() },
+                    onUpdateTitle = { vm.updateTitle(it) },
+                    onOpenSettings = { showChatSettings = true },
+                    onDeleteConversation = {
+                        vm.deleteConversation(conversation)
+                        navController.popBackStack()
                     },
-                    onClickMenu = {
-                        previewMode = !previewMode
-                    },
-                    onUpdateTitle = {
-                        vm.updateTitle(it)
-                    },
-                    onOpenGroupChatSettings = {
-                        showGroupChatSettings = true
-                    },
-                    onOpenAssistantSettings = {
-                        navController.navigate(Screen.AssistantDetail(id = setting.getCurrentAssistant().id.toString()))
-                    },
-                    onCreateGroupChat = {
-                        showCreateGroupChat = true
-                    },
-                    onStartAutoDiscuss = {
-                        if (autoDiscussState.isRunning) {
-                            vm.stopAutoDiscuss()
-                        } else {
-                            showAutoDiscussRoundPicker = true
-                        }
-                    },
-                    isAutoDiscussRunning = autoDiscussState.isRunning,
                 )
             },
             bottomBar = {
@@ -480,15 +386,18 @@ private fun ChatPageContent(
                 )
             }
 
-        if (showGroupChatSettings) {
-            GroupChatSettingsDialog(
+        if (showChatSettings) {
+            ChatSettingsBottomSheet(
                 settings = setting,
                 currentAssistant = setting.getCurrentAssistant(),
+                conversationId = conversation.id,
                 groupChatConfig = groupChatConfig,
-                onDismiss = { showGroupChatSettings = false },
+                onDismiss = { showChatSettings = false },
                 onUpdateConfig = { newConfig ->
                     vm.setGroupChatConfig(newConfig)
-                    showGroupChatSettings = false
+                },
+                onNavigateToSearch = {
+                    navController.navigate(Screen.MessageSearch)
                 }
             )
         }

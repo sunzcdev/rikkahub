@@ -403,7 +403,7 @@ private fun SpeakingOrderSelector(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddParticipantSheet(
+internal fun AddParticipantSheet(
     settings: Settings,
     currentAssistant: Assistant,
     existingParticipants: List<GroupChatParticipant>,

@@ -298,7 +298,9 @@ class SettingsStore(
                         )
                     }
                 },
-                assistants = settings.assistants.distinctBy { it.id }.map { assistant ->
+                assistants = settings.assistants
+                    .filter { it.id != Uuid.parse("3d47790c-c415-4b90-9388-751128adb0a0") }
+                    .distinctBy { it.id }.map { assistant ->
                     assistant.copy(
                         // 过滤掉不存在的 MCP 服务器 ID
                         mcpServers = assistant.mcpServers.filter { serverId ->
@@ -673,25 +675,6 @@ internal val DEFAULT_ASSISTANTS = listOf(
         id = DEFAULT_ASSISTANT_ID,
         name = "",
         systemPrompt = ""
-    ),
-    Assistant(
-        id = Uuid.parse("3d47790c-c415-4b90-9388-751128adb0a0"),
-        name = "",
-        systemPrompt = """
-            You are a helpful assistant, called {{char}}, based on model {{model_name}}.
-
-            ## Info
-            - Time: {{cur_datetime}}
-            - Locale: {{locale}}
-            - Timezone: {{timezone}}
-            - Device Info: {{device_info}}
-            - System Version: {{system_version}}
-            - User Nickname: {{user}}
-
-            ## Hint
-            - If the user does not specify a language, reply in the user's primary language.
-            - Remember to use Markdown syntax for formatting, and use latex for mathematical expressions.
-        """.trimIndent()
     ),
     Assistant(
         id = Uuid.parse("a1b2c3d4-0101-4aaa-bbbb-ccccdddd0001"),

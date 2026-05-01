@@ -97,7 +97,7 @@ fun ChatDrawerContent(
     val repo = koinInject<ConversationRepository>()
 
     val activity = context as ComponentActivity
-    val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
+    val drawerVm: ConversationListVM = koinViewModel(viewModelStoreOwner = activity)
 
     val conversations = drawerVm.conversations.collectAsLazyPagingItems()
     val conversationListState = rememberLazyListState(

@@ -420,152 +420,163 @@ fun ChatInput(
                         MediaFileInputRow(state = state)
                     }
 
-                    TextInputRow(
-                        state = state,
-                        conversation = conversation,
-                        onSendMessage = { sendMessage() }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    // Voice input button (left of text field)
+                    VoiceInputButton(
+                        onVoiceResult = { text ->
+                            state.setMessageText(text)
+                            dismissExpand()
+                            onSendClick()
+                        }
                     )
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            // Model Picker
-                            ModelSelector(
-                                modelId = assistant.chatModelId ?: settings.chatModelId,
-                                providers = settings.providers,
-                                onSelect = {
-                                    onUpdateChatModel(it)
-                                    dismissExpand()
-                                },
-                                type = ModelType.CHAT,
-                                onlyIcon = true,
-                                modifier = Modifier,
-                            )
-
-                            // Search
-                            val enableSearchMsg = stringResource(R.string.web_search_enabled)
-                            val disableSearchMsg = stringResource(R.string.web_search_disabled)
-                            val chatModel = settings.getCurrentChatModel()
-                            SearchPickerButton(
-                                enableSearch = enableSearch,
-                                settings = settings,
-                                onToggleSearch = { enabled ->
-                                    onToggleSearch(enabled)
-                                    toaster.show(
-                                        message = if (enabled) enableSearchMsg else disableSearchMsg,
-                                        duration = 1.seconds,
-                                        type = if (enabled) {
-                                            ToastType.Success
-                                        } else {
-                                            ToastType.Normal
-                                        }
-                                    )
-                                },
-                                onUpdateSearchService = onUpdateSearchService,
-                                model = chatModel,
-                            )
-
-                            // Reasoning
-                            val model = settings.getCurrentChatModel()
-                            if (model?.abilities?.contains(ModelAbility.REASONING) == true) {
-                                ReasoningButton(
-                                    reasoningLevel = assistant.reasoningLevel,
-                                    onUpdateReasoningLevel = {
-                                        onUpdateAssistant(assistant.copy(reasoningLevel = it))
-                                    },
-                                    onlyIcon = true,
-                                )
-                            }
-
-                            // MCP
-                            if (settings.mcpServers.isNotEmpty()) {
-                                McpPickerButton(
-                                    assistant = assistant,
-                                    servers = settings.mcpServers,
-                                    mcpManager = mcpManager,
-                                    onUpdateAssistant = {
-                                        onUpdateAssistant(it)
-                                    },
-                                )
-                            }
-                        }
-
-                        ActionIconButton(
-                            onClick = {
-                                expandToggle(ExpandState.Files)
-                            }) {
-                            Icon(
-                                imageVector = if (expand == ExpandState.Files) HugeIcons.Cancel01 else HugeIcons.Add01,
-                                contentDescription = stringResource(R.string.more_options)
-                            )
-                        }
-
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .combinedClickable(
-                                    enabled = loading || !state.isEmpty(),
-                                    onClick = {
-                                        dismissExpand()
-                                        sendMessage()
-                                    }, onLongClick = {
-                                        dismissExpand()
-                                        sendMessageWithoutAnswer()
-                                    }
-                                )
-                        ) {
-                            val containerColor = when {
-                                loading -> MaterialTheme.colorScheme.errorContainer // 加载时，红色
-                                state.isEmpty() -> MaterialTheme.colorScheme.surfaceContainerHigh // 禁用时(输入为空)，灰色
-                                else -> MaterialTheme.colorScheme.primary // 启用时(输入非空)，绿色/主题色
-                            }
-                            val contentColor = when {
-                                loading -> MaterialTheme.colorScheme.onErrorContainer
-                                state.isEmpty() -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) // 禁用时，内容用带透明度的灰色
-                                else -> MaterialTheme.colorScheme.onPrimary
-                            }
-                            Surface(
-                                modifier = Modifier.fillMaxSize(),
-                                shape = CircleShape,
-                                color = containerColor,
-                                content = {})
-                            if (loading) {
-                                KeepScreenOn()
-                                Icon(
-                                    imageVector = HugeIcons.Cancel01,
-                                    contentDescription = stringResource(R.string.stop),
-                                    tint = contentColor
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = HugeIcons.ArrowUp02,
-                                    contentDescription = stringResource(R.string.send),
-                                    tint = contentColor
-                                )
-                            }
-                        }
-
-                        // Voice input button
-                        VoiceInputButton(
-                            onVoiceResult = { text ->
-                                state.setMessageText(text)
-                                dismissExpand()
-                                onSendClick()
-                            }
+                    // Text input field (center, expands)
+                    Box(Modifier.weight(1f)) {
+                        TextInputRow(
+                            state = state,
+                            conversation = conversation,
+                            onSendMessage = { sendMessage() }
                         )
                     }
+
+                    // Attachment/Plus button (right of text field)
+                    ActionIconButton(
+                        onClick = {
+                            expandToggle(ExpandState.Files)
+                        }) {
+                        Icon(
+                            imageVector = if (expand == ExpandState.Files) HugeIcons.Cancel01 else HugeIcons.Add01,
+                            contentDescription = stringResource(R.string.more_options)
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // Model Picker
+                        ModelSelector(
+                            modelId = assistant.chatModelId ?: settings.chatModelId,
+                            providers = settings.providers,
+                            onSelect = {
+                                onUpdateChatModel(it)
+                                dismissExpand()
+                            },
+                            type = ModelType.CHAT,
+                            onlyIcon = true,
+                            modifier = Modifier,
+                        )
+
+                        // Search
+                        val enableSearchMsg = stringResource(R.string.web_search_enabled)
+                        val disableSearchMsg = stringResource(R.string.web_search_disabled)
+                        val chatModel = settings.getCurrentChatModel()
+                        SearchPickerButton(
+                            enableSearch = enableSearch,
+                            settings = settings,
+                            onToggleSearch = { enabled ->
+                                onToggleSearch(enabled)
+                                toaster.show(
+                                    message = if (enabled) enableSearchMsg else disableSearchMsg,
+                                    duration = 1.seconds,
+                                    type = if (enabled) {
+                                        ToastType.Success
+                                    } else {
+                                        ToastType.Normal
+                                    }
+                                )
+                            },
+                            onUpdateSearchService = onUpdateSearchService,
+                            model = chatModel,
+                        )
+
+                        // Reasoning
+                        val model = settings.getCurrentChatModel()
+                        if (model?.abilities?.contains(ModelAbility.REASONING) == true) {
+                            ReasoningButton(
+                                reasoningLevel = assistant.reasoningLevel,
+                                onUpdateReasoningLevel = {
+                                    onUpdateAssistant(assistant.copy(reasoningLevel = it))
+                                },
+                                onlyIcon = true,
+                            )
+                        }
+
+                        // MCP
+                        if (settings.mcpServers.isNotEmpty()) {
+                            McpPickerButton(
+                                assistant = assistant,
+                                servers = settings.mcpServers,
+                                mcpManager = mcpManager,
+                                onUpdateAssistant = {
+                                    onUpdateAssistant(it)
+                                },
+                            )
+                        }
+                    }
+
+                    // Send/Stop button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .combinedClickable(
+                                enabled = loading || !state.isEmpty(),
+                                onClick = {
+                                    dismissExpand()
+                                    sendMessage()
+                                }, onLongClick = {
+                                    dismissExpand()
+                                    sendMessageWithoutAnswer()
+                                }
+                            )
+                    ) {
+                        val containerColor = when {
+                            loading -> MaterialTheme.colorScheme.errorContainer
+                            state.isEmpty() -> MaterialTheme.colorScheme.surfaceContainerHigh
+                            else -> MaterialTheme.colorScheme.primary
+                        }
+                        val contentColor = when {
+                            loading -> MaterialTheme.colorScheme.onErrorContainer
+                            state.isEmpty() -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            else -> MaterialTheme.colorScheme.onPrimary
+                        }
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            shape = CircleShape,
+                            color = containerColor,
+                            content = {})
+                        if (loading) {
+                            KeepScreenOn()
+                            Icon(
+                                imageVector = HugeIcons.Cancel01,
+                                contentDescription = stringResource(R.string.stop),
+                                tint = contentColor
+                            )
+                        } else {
+                            Icon(
+                                imageVector = HugeIcons.ArrowUp02,
+                                contentDescription = stringResource(R.string.send),
+                                tint = contentColor
+                            )
+                        }
+                    }
+                }
                 }
             }
 
