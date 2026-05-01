@@ -1,17 +1,19 @@
 package me.rerere.rikkahub.data.ai.tools
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.core.content.ContextCompat
 import com.amap.api.location.AMapLocationClient
 import com.amap.api.location.AMapLocationClientOption
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -31,72 +33,158 @@ class PhoneBridge(
     private val eventBus: AppEventBus,
     private val getAmapApiKey: () -> String?
 ) {
-    val tool by lazy {
+    val vibrateTool by lazy {
         Tool(
-            name = "phone_hardware_bridge",
-            description = """
-                A bridge to access phone hardware and system functions.
-                Capabilities:
-                - vibrate: Trigger phone vibration.
-                - make_call: Initiate a phone call to a specified number.
-                - get_location: Get current GPS coordinates (using Amap).
-                - take_photo: Capture an image using the camera.
-                - open_external_app: Open an app by package name or URL.
-                - list_files: List contents of a directory (Read-only).
-                - read_file_info: Get metadata/basic info about a file (Read-only).
-            """.trimIndent().replace("\n", " "),
+            name = "vibrate_device",
+            description = "Trigger phone vibration. Specify duration in milliseconds (default 500ms).",
             parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {
-                        put("action", buildJsonObject {
-                            put("type", "string")
-                            put("enum", buildJsonArray {
-                                add("vibrate")
-                                add("make_call")
-                                add("get_location")
-                                add("take_photo")
-                                add("open_external_app")
-                                add("list_files")
-                                add("read_file_info")
-                            })
-                        })
-                        put("phone_number", buildJsonObject {
-                            put("type", "string")
-                            put("description", "Phone number for make_call action")
-                        })
-                        put("vibration_ms", buildJsonObject {
+                        put("duration_ms", buildJsonObject {
                             put("type", "integer")
-                            put("description", "Vibration duration in milliseconds")
+                            put("description", "Vibration duration in milliseconds (default 500)")
                         })
-                        put("app_identifier", buildJsonObject {
-                            put("type", "string")
-                            put("description", "Package name or deep link for open_external_app")
-                        })
-                        put("path", buildJsonObject {
-                            put("type", "string")
-                            put("description", "File or directory path for file_system actions. Use '/' for root of allowed storage.")
-                        })
-                    },
-                    required = listOf("action")
+                    }
                 )
             },
             execute = {
-                val params = it.jsonObject
-                val action = params["action"]?.jsonPrimitive?.contentOrNull ?: error("action is required")
-
-                when (action) {
-                    "vibrate" -> handleVibrate(params["vibration_ms"]?.jsonPrimitive?.contentOrNull?.toLong() ?: 500L)
-                    "make_call" -> handleMakeCall(params["phone_number"]?.jsonPrimitive?.contentOrNull ?: error("phone_number is required"))
-                    "get_location" -> handleGetLocation()
-                    "take_photo" -> handleTakePhoto()
-                    "open_external_app" -> handleOpenApp(params["app_identifier"]?.jsonPrimitive?.contentOrNull ?: error("app_identifier is required"))
-                    "list_files" -> handleListFiles(params["path"]?.jsonPrimitive?.contentOrNull ?: "/")
-                    "read_file_info" -> handleReadFileInfo(params["path"]?.jsonPrimitive?.contentOrNull ?: error("path is required"))
-                    else -> error("Unsupported action: ${action}")
-                }
+                val ms = it.jsonObject["duration_ms"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 500L
+                handleVibrate(ms)
             }
         )
     }
+
+    val callTool by lazy {
+        Tool(
+            name = "make_phone_call",
+            description = "Open the phone dialer with a specified phone number. The user must confirm before the call is placed.",
+            parameters = {
+                InputSchema.Obj(
+                    properties = buildJsonObject {
+                        put("phone_number", buildJsonObject {
+                            put("type", "string")
+                            put("description", "The phone number to dial")
+                        })
+                    },
+                    required = listOf("phone_number")
+                )
+            },
+            needsApproval = true,
+            execute = {
+                val number = it.jsonObject["phone_number"]?.jsonPrimitive?.contentOrNull
+                    ?: error("phone_number is required")
+                handleMakeCall(number)
+            }
+        )
+    }
+
+    val locationTool by lazy {
+        Tool(
+            name = "get_current_location",
+            description = "Get the device's current GPS coordinates and address information using Amap (高德) location service. Returns latitude, longitude, address, city, and province. Requires Amap API key configured in settings and ACCESS_FINE_LOCATION permission.",
+            parameters = {
+                InputSchema.Obj(
+                    properties = buildJsonObject { }
+                )
+            },
+            execute = {
+                handleGetLocation()
+            }
+        )
+    }
+
+    val photoTool by lazy {
+        Tool(
+            name = "take_photo_camera",
+            description = "Launch the system camera app to take a photo. The captured image will be returned and displayed in the chat.",
+            parameters = {
+                InputSchema.Obj(
+                    properties = buildJsonObject { }
+                )
+            },
+            execute = {
+                handleTakePhoto()
+            }
+        )
+    }
+
+    val openAppTool by lazy {
+        Tool(
+            name = "open_external_app",
+            description = "Open an external app by package name (e.g., 'com.whatsapp') or a deep-link URL (e.g., 'https://...' or 'tel:123').",
+            parameters = {
+                InputSchema.Obj(
+                    properties = buildJsonObject {
+                        put("app_identifier", buildJsonObject {
+                            put("type", "string")
+                            put("description", "Package name or deep-link URL to open")
+                        })
+                    },
+                    required = listOf("app_identifier")
+                )
+            },
+            execute = {
+                val id = it.jsonObject["app_identifier"]?.jsonPrimitive?.contentOrNull
+                    ?: error("app_identifier is required")
+                handleOpenApp(id)
+            }
+        )
+    }
+
+    val listFilesTool by lazy {
+        Tool(
+            name = "list_directory_contents",
+            description = "List files and directories at a specified path. Returns file names, sizes, and last modified timestamps. Read-only operations — no file content is read. Use '/' for the root of external storage.",
+            parameters = {
+                InputSchema.Obj(
+                    properties = buildJsonObject {
+                        put("path", buildJsonObject {
+                            put("type", "string")
+                            put("description", "Directory path relative to external storage root. Use '/' for root.")
+                        })
+                    },
+                    required = listOf("path")
+                )
+            },
+            execute = {
+                val path = it.jsonObject["path"]?.jsonPrimitive?.contentOrNull ?: "/"
+                handleListFiles(path)
+            }
+        )
+    }
+
+    val fileInfoTool by lazy {
+        Tool(
+            name = "get_file_info",
+            description = "Get metadata about a specific file or directory: name, size, last modified, type. Read-only — no file content is read.",
+            parameters = {
+                InputSchema.Obj(
+                    properties = buildJsonObject {
+                        put("path", buildJsonObject {
+                            put("type", "string")
+                            put("description", "File path relative to external storage root")
+                        })
+                    },
+                    required = listOf("path")
+                )
+            },
+            execute = {
+                val path = it.jsonObject["path"]?.jsonPrimitive?.contentOrNull
+                    ?: error("path is required")
+                handleReadFileInfo(path)
+            }
+        )
+    }
+
+    fun getAllTools(): List<Tool> = listOf(
+        vibrateTool,
+        callTool,
+        locationTool,
+        photoTool,
+        openAppTool,
+        listFilesTool,
+        fileInfoTool
+    )
 
     private fun handleVibrate(ms: Long): List<UIMessagePart> {
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -114,11 +202,12 @@ class PhoneBridge(
             vibrator.vibrate(ms)
         }
 
-        val payload = buildJsonObject {
-            put("success", true)
-            put("duration_ms", ms)
-        }
-        return listOf(UIMessagePart.Text(payload.toString()))
+        return listOf(UIMessagePart.Text(
+            buildJsonObject {
+                put("success", true)
+                put("duration_ms", ms)
+            }.toString()
+        ))
     }
 
     private fun handleMakeCall(number: String): List<UIMessagePart> {
@@ -127,18 +216,37 @@ class PhoneBridge(
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         context.startActivity(intent)
-        val payload = buildJsonObject {
-            put("success", true)
-            put("action", "dial_initiated")
-            put("number", number)
-        }
-        return listOf(UIMessagePart.Text(payload.toString()))
+        return listOf(UIMessagePart.Text(
+            buildJsonObject {
+                put("success", true)
+                put("action", "dial_initiated")
+                put("number", number)
+                put("note", "Dialer opened. User must tap call button.")
+            }.toString()
+        ))
     }
 
     private suspend fun handleGetLocation(): List<UIMessagePart> {
+        val permissionCheck = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            return listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", true)
+                    put("message", "GPS permission (ACCESS_FINE_LOCATION) not granted. Please grant location permission in Settings -> Apps -> RikkaHub -> Permissions.")
+                }.toString()
+            ))
+        }
+
         val apiKey = getAmapApiKey()
         if (apiKey.isNullOrBlank()) {
-            return listOf(UIMessagePart.Text("{\"error\": \"Amap API Key is not configured in settings. Go to Settings -> Phone Hardware Bridge to set it.\"}"))
+            return listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", true)
+                    put("message", "Amap API Key is not configured. Go to Settings -> Phone Hardware Bridge to set it.")
+                }.toString()
+            ))
         }
 
         return try {
@@ -172,21 +280,32 @@ class PhoneBridge(
             }
 
             if (location != null) {
-                val payload = buildJsonObject {
-                    put("latitude", location.latitude)
-                    put("longitude", location.longitude)
-                    put("address", location.address)
-                    put("poi_name", location.poiName)
-                    put("city", location.city)
-                    put("province", location.province)
-                    put("success", true)
-                }
-                listOf(UIMessagePart.Text(payload.toString()))
+                listOf(UIMessagePart.Text(
+                    buildJsonObject {
+                        put("success", true)
+                        put("latitude", location.latitude)
+                        put("longitude", location.longitude)
+                        put("address", location.address)
+                        put("poi_name", location.poiName)
+                        put("city", location.city)
+                        put("province", location.province)
+                    }.toString()
+                ))
             } else {
-                listOf(UIMessagePart.Text("{\"error\": \"Failed to obtain GPS location. Check permissions and API key.\"}"))
+                listOf(UIMessagePart.Text(
+                    buildJsonObject {
+                        put("error", true)
+                        put("message", "Failed to obtain GPS location. Check that GPS is enabled and try again.")
+                    }.toString()
+                ))
             }
         } catch (e: Exception) {
-            listOf(UIMessagePart.Text("{\"error\": \"Location error: ${e.message}\"}"))
+            listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", true)
+                    put("message", "Location error: ${e.message}")
+                }.toString()
+            ))
         }
     }
 
@@ -198,9 +317,21 @@ class PhoneBridge(
                         put("success", true)
                         put("image_url", uri.toString())
                     }
-                    continuation.resume(listOf(UIMessagePart.Text(payload.toString()), UIMessagePart.Image(uri.toString())))
+                    continuation.resume(
+                        listOf(
+                            UIMessagePart.Text(payload.toString()),
+                            UIMessagePart.Image(uri.toString())
+                        )
+                    )
                 } else {
-                    continuation.resume(listOf(UIMessagePart.Text("{\"error\": \"User cancelled camera capture or error occurred.\"}")))
+                    continuation.resume(
+                        listOf(UIMessagePart.Text(
+                            buildJsonObject {
+                                put("error", true)
+                                put("message", "Camera capture was cancelled or failed.")
+                            }.toString()
+                        ))
+                    )
                 }
             })
         }
@@ -216,21 +347,57 @@ class PhoneBridge(
             if (intent != null) {
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(intent)
-                listOf(UIMessagePart.Text("{\"success\": true, \"launched\": \"$id\"}"))
+                listOf(UIMessagePart.Text(
+                    buildJsonObject {
+                        put("success", true)
+                        put("launched", id)
+                    }.toString()
+                ))
             } else {
-                listOf(UIMessagePart.Text("{\"error\": \"App not found or invalid URL: $id\"}"))
+                listOf(UIMessagePart.Text(
+                    buildJsonObject {
+                        put("error", true)
+                        put("message", "App not found or invalid URL: $id")
+                    }.toString()
+                ))
             }
         } catch (e: Exception) {
-            listOf(UIMessagePart.Text("{\"error\": \"${e.message}\"}"))
+            listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", true)
+                    put("message", e.message)
+                }.toString()
+            ))
         }
     }
 
     private fun handleListFiles(relativePath: String): List<UIMessagePart> {
+        val permissionCheck = ContextCompat.checkSelfPermission(
+            context,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                Manifest.permission.READ_MEDIA_IMAGES
+            else
+                Manifest.permission.READ_EXTERNAL_STORAGE
+        )
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            return listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", true)
+                    put("message", "Storage read permission not granted.")
+                }.toString()
+            ))
+        }
+
         val root = Environment.getExternalStorageDirectory()
         val targetDir = if (relativePath == "/" || relativePath.isBlank()) root else File(root, relativePath)
 
         if (!targetDir.exists() || !targetDir.isDirectory) {
-            return listOf(UIMessagePart.Text("{\"error\": \"Path does not exist or is not a directory.\"}"))
+            return listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", true)
+                    put("message", "Directory does not exist: $relativePath")
+                }.toString()
+            ))
         }
 
         val files = targetDir.listFiles()?.map { file ->
@@ -242,29 +409,53 @@ class PhoneBridge(
             }
         } ?: emptyList()
 
-        val payload = buildJsonObject {
-            put("current_path", targetDir.absolutePath.replace(root.absolutePath, ""))
-            put("files", buildJsonArray { files.forEach { add(it) } })
-        }
-        return listOf(UIMessagePart.Text(payload.toString()))
+        return listOf(UIMessagePart.Text(
+            buildJsonObject {
+                put("current_path", targetDir.absolutePath.removePrefix(root.absolutePath).ifEmpty { "/" })
+                put("file_count", files.size)
+                put("files", buildJsonArray { files.forEach { add(it) } })
+            }.toString()
+        ))
     }
 
     private fun handleReadFileInfo(relativePath: String): List<UIMessagePart> {
+        val permissionCheck = ContextCompat.checkSelfPermission(
+            context,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                Manifest.permission.READ_MEDIA_IMAGES
+            else
+                Manifest.permission.READ_EXTERNAL_STORAGE
+        )
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            return listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", true)
+                    put("message", "Storage read permission not granted.")
+                }.toString()
+            ))
+        }
+
         val root = Environment.getExternalStorageDirectory()
         val file = File(root, relativePath)
 
         if (!file.exists()) {
-            return listOf(UIMessagePart.Text("{\"error\": \"File not found.\"}"))
+            return listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", true)
+                    put("message", "File not found: $relativePath")
+                }.toString()
+            ))
         }
 
-        val payload = buildJsonObject {
-            put("name", file.name)
-            put("size", file.length())
-            put("last_modified", file.lastModified())
-            put("is_file", file.isFile)
-            put("extension", file.extension)
-            put("note", "File content reading is restricted to metadata for security.")
-        }
-        return listOf(UIMessagePart.Text(payload.toString()))
+        return listOf(UIMessagePart.Text(
+            buildJsonObject {
+                put("name", file.name)
+                put("size", file.length())
+                put("last_modified", file.lastModified())
+                put("is_file", file.isFile)
+                put("extension", file.extension)
+                put("note", "File content reading is restricted to metadata for security.")
+            }.toString()
+        ))
     }
 }

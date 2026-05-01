@@ -630,7 +630,6 @@ fun ChatInput(
             }
         }
     }
-}
 
 @Composable
 private fun ActionIconButton(

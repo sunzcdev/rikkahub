@@ -332,7 +332,7 @@ class LocalTools(
             tools.add(askUserTool)
         }
         if (options.contains(LocalToolOption.PhoneBridge)) {
-            tools.add(phoneBridge.tool)
+            tools.addAll(phoneBridge.getAllTools())
         }
         return tools
     }

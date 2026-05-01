@@ -389,6 +389,54 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-01T06:37:26.923Z"
+    },
+    {
+      "id": "bug-025",
+      "timestamp": "2026-05-01T08:23:32.053Z",
+      "error_message": "Significant refactor of ",
+      "file": ".github/workflows/release.yml",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 9→3 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "yml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-01T08:23:32.053Z"
+    },
+    {
+      "id": "bug-026",
+      "timestamp": "2026-05-01T08:24:23.041Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 7→3 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-01T08:24:23.041Z"
+    },
+    {
+      "id": "bug-027",
+      "timestamp": "2026-05-01T09:51:43.419Z",
+      "error_message": "Wrong reference: setting_stt_provider_name should be setting_stt_page_add_provider",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/pages/setting/components/STTProviderConfigure.kt",
+      "root_cause": "Used \"setting_stt_provider_name\" instead of \"setting_stt_page_add_provider\"",
+      "fix": "Changed setting_stt_provider_name → setting_stt_page_add_provider",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-01T09:51:43.419Z"
     }
   ]
 }
