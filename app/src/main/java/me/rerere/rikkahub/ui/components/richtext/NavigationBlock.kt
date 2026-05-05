@@ -173,7 +173,7 @@ fun parseAmapUrl(url: String): NavBlockData? {
     return try {
         val uri = android.net.Uri.parse(url)
         when (uri.host?.lowercase()) {
-            "viewMap" -> {
+            "viewmap" -> {
                 // Single location view: androidamap://viewMap?poiname=XXX&lat=XXX&lon=XXX
                 val to = uri.getQueryParameter("poiname") ?: ""
                 NavBlockData(
@@ -200,7 +200,7 @@ fun parseAmapUrl(url: String): NavBlockData? {
                     url = url
                 )
             }
-            "keywordNavi" -> {
+            "keywordnavi" -> {
                 // Keyword navigation: androidamap://keywordNavi?keyword=XXX
                 val keyword = uri.getQueryParameter("keyword") ?: ""
                 NavBlockData(

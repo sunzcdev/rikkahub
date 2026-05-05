@@ -105,6 +105,7 @@ private object ToolNames {
     const val TTS = "text_to_speech"
     const val ASK_USER = "ask_user"
     const val USE_SKILL = "use_skill"
+    const val AMAP_LINK = "amap_link"
 }
 
 private object MemoryActions {
@@ -218,6 +219,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
 
         ToolNames.SCRAPE_WEB -> arguments.getStringContent("url") != null
         ToolNames.TTS -> arguments.getStringContent("text") != null
+        ToolNames.AMAP_LINK -> false
         else -> false
     } || isDenied || images.isNotEmpty()
 

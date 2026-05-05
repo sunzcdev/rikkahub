@@ -80,8 +80,10 @@ import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.model.replaceRegexes
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
+import me.rerere.rikkahub.ui.components.richtext.NavigationBlock
 import me.rerere.rikkahub.ui.components.richtext.ZoomableAsyncImage
 import me.rerere.rikkahub.ui.components.richtext.buildMarkdownPreviewHtml
+import me.rerere.rikkahub.ui.components.richtext.parseAmapUrl
 import me.rerere.rikkahub.ui.components.ui.ChainOfThought
 import me.rerere.rikkahub.ui.components.ui.Favicon
 import me.rerere.rikkahub.ui.context.LocalNavController
@@ -536,6 +538,21 @@ private fun MessagePartsBlock(
             }
         }
     }
+
+    // Render NavigationBlock for amap_link tool results
+    val amapExecutedTools = parts.filterIsInstance<UIMessagePart.Tool>()
+        .filter { it.toolName == "amap_link" }
+    amapExecutedTools
+        .filter { it.isExecuted }
+        .forEach { tool ->
+            val texts = tool.output.filterIsInstance<UIMessagePart.Text>()
+            texts.forEach { textPart ->
+                val parsed = parseAmapUrl(textPart.text)
+                if (parsed != null) {
+                    NavigationBlock(data = parsed)
+                }
+            }
+        }
 
     // Annotations (always rendered at the end)
     if (annotations.isNotEmpty()) {
