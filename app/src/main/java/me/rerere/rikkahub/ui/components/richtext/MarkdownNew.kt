@@ -166,6 +166,18 @@ fun MarkdownNew(
         }
     }
 
+    // Check for standalone amap URL
+    if (isStandaloneAmapUrl(content)) {
+        val navData = parseAmapUrl(content)
+        if (navData != null) {
+            NavigationBlock(
+                data = navData,
+                modifier = modifier
+            )
+            return
+        }
+    }
+
     var html by remember {
         mutableStateOf(
             value = generateMarkdownHtml(content),

@@ -246,6 +246,18 @@ fun MarkdownBlock(
         }
     }
 
+    // Check for standalone amap URL
+    if (isStandaloneAmapUrl(content)) {
+        val navData = parseAmapUrl(content)
+        if (navData != null) {
+            NavigationBlock(
+                data = navData,
+                modifier = modifier
+            )
+            return
+        }
+    }
+
     var (data, setData) = remember { mutableStateOf(parseMarkdown(content)) }
 
     // 监听内容变化，重新解析AST树

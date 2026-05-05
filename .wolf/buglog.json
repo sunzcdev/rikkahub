@@ -437,6 +437,38 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-01T09:51:43.419Z"
+    },
+    {
+      "id": "bug-028",
+      "timestamp": "2026-05-05T04:04:01.097Z",
+      "error_message": "Incorrect value in code",
+      "file": "app/src/main/java/me/rerere/rikkahub/data/ai/tools/PhoneBridge.kt",
+      "root_cause": "Had \"Generate an Amap (高德地图) deeplink that the user ca",
+      "fix": "Changed to \"Generate an Amap (高德地图) deeplink that the user ca",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-05-05T04:08:38.395Z"
+    },
+    {
+      "id": "bug-029",
+      "timestamp": "2026-05-05T04:08:21.615Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/main/java/me/rerere/rikkahub/data/ai/tools/PhoneBridge.kt",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 12→4 lines (8 removed) | Also: // Return navblock format; val navBlockJson = buildJsonObject {",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-05-05T04:08:31.249Z"
     }
   ]
 }

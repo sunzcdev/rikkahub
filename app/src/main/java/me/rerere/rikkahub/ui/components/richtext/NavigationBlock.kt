@@ -167,3 +167,58 @@ fun parseNavBlockData(content: String): NavBlockData? {
         null
     }
 }
+
+// Helper function to parse amap:// URL into NavBlockData
+fun parseAmapUrl(url: String): NavBlockData? {
+    return try {
+        val uri = android.net.Uri.parse(url)
+        when (uri.host?.lowercase()) {
+            "viewMap" -> {
+                // Single location view: androidamap://viewMap?poiname=XXX&lat=XXX&lon=XXX
+                val to = uri.getQueryParameter("poiname") ?: ""
+                NavBlockData(
+                    from = "",
+                    to = to,
+                    type = "driving",
+                    url = url
+                )
+            }
+            "route" -> {
+                // Navigation route: androidamap://route?sname=XXX&slat=XXX&slon=XXX&dname=XXX&dlat=XXX&dlon=XXX&t=0
+                val from = uri.getQueryParameter("sname") ?: ""
+                val to = uri.getQueryParameter("dname") ?: ""
+                val t = uri.getQueryParameter("t") ?: "0"
+                val type = when (t) {
+                    "1" -> "transit"
+                    "2" -> "walking"
+                    else -> "driving"
+                }
+                NavBlockData(
+                    from = from,
+                    to = to,
+                    type = type,
+                    url = url
+                )
+            }
+            "keywordNavi" -> {
+                // Keyword navigation: androidamap://keywordNavi?keyword=XXX
+                val keyword = uri.getQueryParameter("keyword") ?: ""
+                NavBlockData(
+                    from = "",
+                    to = keyword,
+                    type = "driving",
+                    url = url
+                )
+            }
+            else -> null
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+// Check if content is a standalone amap URL
+fun isStandaloneAmapUrl(content: String): Boolean {
+    val trimmed = content.trim()
+    return trimmed.startsWith("androidamap://", ignoreCase = true) && !trimmed.contains(" ")
+}
