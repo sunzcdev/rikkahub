@@ -154,6 +154,18 @@ fun MarkdownNew(
     style: TextStyle = LocalTextStyle.current,
     onClickCitation: (String) -> Unit = {},
 ) {
+    // Check for navblock first
+    if (content.startsWith("[navblock]")) {
+        val navData = parseNavBlockData(content)
+        if (navData != null) {
+            NavigationBlock(
+                data = navData,
+                modifier = modifier
+            )
+            return
+        }
+    }
+
     var html by remember {
         mutableStateOf(
             value = generateMarkdownHtml(content),

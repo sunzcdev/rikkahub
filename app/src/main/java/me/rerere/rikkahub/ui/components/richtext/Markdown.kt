@@ -87,6 +87,8 @@ import org.intellij.markdown.flavours.gfm.GFMElementTypes
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.flavours.gfm.GFMTokenTypes
 import org.intellij.markdown.parser.MarkdownParser
+import me.rerere.rikkahub.ui.components.richtext.NavigationBlock
+import me.rerere.rikkahub.ui.components.richtext.parseNavBlockData
 
 private val flavour by lazy {
     GFMFlavourDescriptor(
@@ -232,6 +234,18 @@ fun MarkdownBlock(
     style: TextStyle = LocalTextStyle.current,
     onClickCitation: (String) -> Unit = {}
 ) {
+    // Check for navblock first
+    if (content.startsWith("[navblock]")) {
+        val navData = parseNavBlockData(content)
+        if (navData != null) {
+            NavigationBlock(
+                data = navData,
+                modifier = modifier
+            )
+            return
+        }
+    }
+
     var (data, setData) = remember { mutableStateOf(parseMarkdown(content)) }
 
     // 监听内容变化，重新解析AST树

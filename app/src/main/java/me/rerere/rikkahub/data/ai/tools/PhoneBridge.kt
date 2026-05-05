@@ -955,8 +955,15 @@ class PhoneBridge(
         }
         Log.d(TAG, "handleAmapNavigate: built uri=$uri")
 
-        // Return deeplink directly as plain text, not wrapped in JSON
-        return listOf(UIMessagePart.Text(uri))
+        // Return navblock format
+        val navBlockJson = buildJsonObject {
+            put("from", fromName ?: fromLocation)
+            put("to", toName ?: toLocation)
+            put("type", routeType)
+            put("url", uri)
+        }.toString()
+
+        return listOf(UIMessagePart.Text("[navblock]$navBlockJson"))
     }
 
     private suspend fun handleAmapShow(
@@ -988,8 +995,15 @@ class PhoneBridge(
 
         Log.d(TAG, "handleAmapShow: built uri=$uri")
 
-        // Return deeplink directly as plain text, not wrapped in JSON
-        return listOf(UIMessagePart.Text(uri))
+        // Return navblock format
+        val navBlockJson = buildJsonObject {
+            put("from", "")
+            put("to", name ?: location)
+            put("type", "driving") // Default for show location
+            put("url", uri)
+        }.toString()
+
+        return listOf(UIMessagePart.Text("[navblock]$navBlockJson"))
     }
 
     private suspend fun parseLocation(location: String): Result<Triple<Double?, Double?, String?>> {
