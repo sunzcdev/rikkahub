@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
@@ -48,6 +49,8 @@ import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.foundation.text.ClickableText
+import me.rerere.rikkahub.utils.openUrl
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -89,6 +92,7 @@ import org.jsoup.nodes.TextNode
 private val INLINE_LATEX_REGEX = Regex("\\\\\\((.+?)\\\\\\)")
 private val BLOCK_LATEX_REGEX = Regex("\\\\\\[(.+?)\\\\\\]", RegexOption.DOT_MATCHES_ALL)
 private val CODE_BLOCK_REGEX = Regex("```[\\s\\S]*?```|`[^`\n]*`", RegexOption.DOT_MATCHES_ALL)
+private val ANDROIDAMAP_LINK_REGEX = Regex("(androidamap://[^\\s<>]+)")
 
 private fun preProcess(content: String): String {
     val codeBlocks = mutableListOf<IntRange>()
@@ -101,6 +105,29 @@ private fun preProcess(content: String): String {
     result = BLOCK_LATEX_REGEX.replace(result) { m ->
         if (isInCodeBlock(m.range.first)) m.value else "$$" + m.groupValues[1] + "$$"
     }
+
+    // 包装 androidamap:// 链接在 <> 中，使其成为可点击的自动链接
+    // 需要重新计算代码块位置，因为前面的替换可能改变了字符串长度
+    val newCodeBlocks = mutableListOf<IntRange>()
+    CODE_BLOCK_REGEX.findAll(result).forEach { match ->
+        newCodeBlocks.add(match.range)
+    }
+
+    fun isInNewCodeBlock(position: Int): Boolean {
+        return newCodeBlocks.any { range -> position in range }
+    }
+
+    val sb = StringBuilder()
+    var lastIndex = 0
+    ANDROIDAMAP_LINK_REGEX.findAll(result).forEach { match ->
+        // Process androidamap links even when inside code blocks
+        sb.append(result, lastIndex, match.range.first)
+        sb.append("<${match.value}>")
+        lastIndex = match.range.last + 1
+    }
+    sb.append(result, lastIndex, result.length)
+    result = sb.toString()
+
     return result
 }
 
@@ -360,19 +387,37 @@ private fun HtmlParagraphContent(
         text to contents
     }
 
-    Text(
-        text = annotatedString,
-        inlineContent = inlineContents,
-        softWrap = true,
-        overflow = TextOverflow.Visible,
-        modifier = Modifier.fillMaxWidth(),
-        style = textStyle.copy(
-            lineHeight = if (hasInlineMath && enableLatexRendering)
-                TextUnit.Unspecified
-            else
-                textStyle.lineHeight,
-        ),
-    )
+    if (inlineContents.isNotEmpty()) {
+        Text(
+            text = annotatedString,
+            inlineContent = inlineContents,
+            modifier = Modifier.fillMaxWidth(),
+            style = textStyle.copy(
+                lineHeight = if (hasInlineMath && enableLatexRendering)
+                    TextUnit.Unspecified
+                else
+                    textStyle.lineHeight,
+            )
+        )
+    } else {
+        val context = LocalContext.current
+        ClickableText(
+            text = annotatedString,
+            modifier = Modifier.fillMaxWidth(),
+            style = textStyle.copy(
+                lineHeight = if (hasInlineMath && enableLatexRendering)
+                    TextUnit.Unspecified
+                else
+                    textStyle.lineHeight,
+            ),
+            onClick = { offset ->
+                annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                    .firstOrNull()?.let { annotation ->
+                        context.openUrl(annotation.item)
+                    }
+            }
+        )
+    }
 }
 
 @Composable
@@ -723,7 +768,23 @@ private fun HtmlInlineGroup(nodes: List<Node>, onClickCitation: (String) -> Unit
     }
 
     if (annotatedString.isNotEmpty()) {
-        Text(text = annotatedString, inlineContent = inlineContents)
+        if (inlineContents.isNotEmpty()) {
+            Text(
+                text = annotatedString,
+                inlineContent = inlineContents
+            )
+        } else {
+            val context = LocalContext.current
+            ClickableText(
+                text = annotatedString,
+                onClick = { offset ->
+                    annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                        .firstOrNull()?.let { annotation ->
+                            context.openUrl(annotation.item)
+                        }
+                }
+            )
+        }
     }
 }
 
@@ -940,7 +1001,9 @@ private fun AnnotatedString.Builder.appendHtmlInlineElement(
                     ).merge(cssStyle ?: SpanStyle())
                     withLink(LinkAnnotation.Url(href)) {
                         withStyle(linkStyle) {
+                            val start = length
                             recurseChildren(element, style.merge(linkStyle.asTextStyle()))
+                            addStringAnnotation(tag = "URL", annotation = href, start = start, end = length)
                         }
                     }
                 }

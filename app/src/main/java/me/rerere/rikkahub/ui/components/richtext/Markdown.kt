@@ -50,6 +50,8 @@ import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.foundation.text.ClickableText
+import me.rerere.rikkahub.utils.openUrl
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -101,6 +103,7 @@ private val BLOCK_LATEX_REGEX = Regex("\\\\\\[(.+?)\\\\\\]", RegexOption.DOT_MAT
 val THINKING_REGEX = Regex("<think>([\\s\\S]*?)(?:</think>|$)", RegexOption.DOT_MATCHES_ALL)
 private val CODE_BLOCK_REGEX = Regex("```[\\s\\S]*?```|`[^`\n]*`", RegexOption.DOT_MATCHES_ALL)
 private val BREAK_LINE_REGEX = Regex("(?i)<br\\s*/?>")
+private val ANDROIDAMAP_LINK_REGEX = Regex("(androidamap://[^\\s<>]+)")
 
 // 预处理markdown内容
 private fun preProcess(content: String): String {
@@ -132,6 +135,28 @@ private fun preProcess(content: String): String {
             "$$" + matchResult.groupValues[1] + "$$"
         }
     }
+
+    // 包装 androidamap:// 链接在 <> 中，使其成为可点击的自动链接
+    // 需要重新计算代码块位置，因为前面的替换可能改变了字符串长度
+    val newCodeBlocks = mutableListOf<IntRange>()
+    CODE_BLOCK_REGEX.findAll(result).forEach { match ->
+        newCodeBlocks.add(match.range)
+    }
+
+    fun isInNewCodeBlock(position: Int): Boolean {
+        return newCodeBlocks.any { range -> position in range }
+    }
+
+    val sb = StringBuilder()
+    var lastIndex = 0
+    ANDROIDAMAP_LINK_REGEX.findAll(result).forEach { match ->
+        // Process androidamap links even when inside code blocks
+        sb.append(result, lastIndex, match.range.first)
+        sb.append("<${match.value}>")
+        lastIndex = match.range.last + 1
+    }
+    sb.append(result, lastIndex, result.length)
+    result = sb.toString()
 
     return result
 }
@@ -424,8 +449,7 @@ private fun MarkdownNode(
                 color = MaterialTheme.colorScheme.primary,
                 textDecoration = TextDecoration.Underline,
                 modifier = modifier.clickable {
-                    val intent = Intent(Intent.ACTION_VIEW, linkDest.toUri())
-                    context.startActivity(intent)
+                    context.openUrl(linkDest)
                 })
         }
 
@@ -742,6 +766,7 @@ private fun Paragraph(
 
     val textStyle = LocalTextStyle.current
     val density = LocalDensity.current
+    val context = LocalContext.current
     FlowRow(
         modifier = modifier.then(
             if (node.nextSibling() != null) Modifier.padding(bottom = LocalTextStyle.current.fontSize.toDp())
@@ -765,16 +790,34 @@ private fun Paragraph(
                 }
             }
         }
-        Text(
-            text = annotatedString,
-            modifier = Modifier,
-            inlineContent = inlineContents,
-            softWrap = true,
-            overflow = TextOverflow.Visible,
-            style = LocalTextStyle.current.copy(
-                lineHeight = if (hasInlineMath && enableLatexRendering) TextUnit.Unspecified else LocalTextStyle.current.lineHeight
+        if (inlineContents.isNotEmpty()) {
+            // 有 inline content (如数学公式)，用 Text
+            Text(
+                text = annotatedString,
+                modifier = Modifier,
+                inlineContent = inlineContents,
+                softWrap = true,
+                overflow = TextOverflow.Visible,
+                style = LocalTextStyle.current.copy(
+                    lineHeight = if (hasInlineMath && enableLatexRendering) TextUnit.Unspecified else LocalTextStyle.current.lineHeight
+                )
             )
-        )
+        } else {
+            // 没有 inline content，用 ClickableText 确保链接可点击
+            ClickableText(
+                text = annotatedString,
+                modifier = Modifier,
+                style = LocalTextStyle.current.copy(
+                    lineHeight = if (hasInlineMath && enableLatexRendering) TextUnit.Unspecified else LocalTextStyle.current.lineHeight
+                ),
+                onClick = { offset ->
+                    annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                        .firstOrNull()?.let { annotation ->
+                            context.openUrl(annotation.item)
+                        }
+                }
+            )
+        }
     }
 }
 
@@ -848,7 +891,9 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
             val link = node.getTextInNode(content)
             withLink(LinkAnnotation.Url(link)) {
                 withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                    val start = length
                     append(link)
+                    addStringAnnotation(tag = "URL", annotation = link, start = start, end = length)
                 }
             }
         }
@@ -966,7 +1011,9 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                             color = colorScheme.primary, textDecoration = TextDecoration.Underline
                         )
                     ) {
+                        val start = length
                         append(linkText)
+                        addStringAnnotation(tag = "URL", annotation = linkDest, start = start, end = length)
                     }
                 }
             }
@@ -975,9 +1022,12 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
         node.type == MarkdownElementTypes.AUTOLINK -> {
             val links = node.children.trim(MarkdownTokenTypes.LT, 1).trim(MarkdownTokenTypes.GT, 1)
             links.fastForEach { link ->
-                withLink(LinkAnnotation.Url(link.getTextInNode(content))) {
+                val url = link.getTextInNode(content)
+                withLink(LinkAnnotation.Url(url)) {
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        append(link.getTextInNode(content))
+                        val start = length
+                        append(url)
+                        addStringAnnotation(tag = "URL", annotation = url, start = start, end = length)
                     }
                 }
             }

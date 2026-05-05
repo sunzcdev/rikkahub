@@ -433,7 +433,6 @@ fun ChatInput(
                             onSendClick()
                         }
                     )
-                }
 
                     // Text input field (center, expands)
                     Box(Modifier.weight(1f)) {
@@ -630,6 +629,7 @@ fun ChatInput(
             }
         }
     }
+}
 
 @Composable
 private fun ActionIconButton(

@@ -78,10 +78,22 @@ fun Context.writeClipboardText(text: String) {
 fun Context.openUrl(url: String) {
     Log.i(TAG, "openUrl: $url")
     runCatching {
-        val intent = CustomTabsIntent.Builder()
-            .setShowTitle(true)
-            .build()
-        intent.launchUrl(this, url.toUri())
+        val uri = url.toUri()
+        val scheme = uri.scheme
+
+        // For http/https, use Chrome Custom Tabs
+        // For other schemes (like androidamap://), use a simple ACTION_VIEW intent
+        if (scheme == "http" || scheme == "https") {
+            val intent = CustomTabsIntent.Builder()
+                .setShowTitle(true)
+                .build()
+            intent.launchUrl(this, uri)
+        } else {
+            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+        }
     }.onFailure {
         it.printStackTrace()
         Toast.makeText(this, "Failed to open URL: $url", Toast.LENGTH_SHORT).show()
