@@ -29,6 +29,11 @@ import me.rerere.rikkahub.di.repositoryModule
 import me.rerere.rikkahub.di.viewModelModule
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.jiji.JijiIntegration
+import me.rerere.rikkahub.jiji.JijiNotificationManager
+import me.rerere.rikkahub.jiji.jijiModule
+import me.rerere.rikkahub.jiji.JijiSchedulerService
+import me.rerere.rikkahub.jiji.JijiConfigStore
 import me.rerere.rikkahub.service.WebServerService
 import me.rerere.rikkahub.utils.CrashHandler
 import me.rerere.rikkahub.utils.DatabaseUtil
@@ -52,7 +57,7 @@ class RikkaHubApp : Application() {
             androidLogger()
             androidContext(this@RikkaHubApp)
             workManagerFactory()
-            modules(appModule, viewModelModule, dataSourceModule, repositoryModule)
+            modules(appModule, viewModelModule, dataSourceModule, repositoryModule, jijiModule)
         }
         this.createNotificationChannel()
 
@@ -79,6 +84,9 @@ class RikkaHubApp : Application() {
 
         // Start WebServer if enabled in settings
         startWebServerIfEnabled()
+
+        // Start Jiji if enabled
+        startJijiIfEnabled()
 
         // Increment launch count
         incrementLaunchCount()
@@ -183,6 +191,28 @@ class RikkaHubApp : Application() {
             .setShowBadge(false)
             .build()
         notificationManager.createNotificationChannel(ttsPlaybackChannel)
+
+        // 唧唧的通知渠道
+        get<JijiNotificationManager>().createNotificationChannel()
+    }
+
+    private fun startJijiIfEnabled() {
+        get<AppScope>().launch {
+            runCatching {
+                delay(300)
+
+                // 确保唧唧的 Assistant 预设存在（创建或获取）
+                val jijiIntegration = get<JijiIntegration>()
+                jijiIntegration.getOrCreateJijiAssistant()
+
+                val config = get<JijiConfigStore>().getConfig()
+                if (config.enabled) {
+                    JijiSchedulerService.start(this@RikkaHubApp)
+                }
+            }.onFailure {
+                Log.e(TAG, "startJijiIfEnabled failed", it)
+            }
+        }
     }
 
     override fun onTerminate() {

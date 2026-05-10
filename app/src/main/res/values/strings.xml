@@ -432,6 +432,8 @@
   <string name="notification_web_server_starting">Starting...</string>
   <string name="notification_web_server_stop">Stop</string>
   <string name="notification_channel_tts_playback">TTS Playback</string>
+  <string name="notification_channel_jiji_proactive">Jiji (唧唧)</string>
+  <string name="notification_channel_jiji_proactive_desc">Proactive assistant Jiji\'s notifications</string>
   <string name="permission_camera">Camera</string>
   <string name="permission_camera_desc">Camera permission is required to take photos</string>
   <string name="permission_desc_goto_setting">Some permissions have been permanently denied, please go to the app settings to manually enable them:</string>

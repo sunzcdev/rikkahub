@@ -469,6 +469,182 @@
       "related_bugs": [],
       "occurrences": 2,
       "last_seen": "2026-05-05T04:08:31.249Z"
+    },
+    {
+      "id": "bug-030",
+      "timestamp": "2026-05-05T10:01:50.144Z",
+      "error_message": "Null/undefined access in ",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/richtext/NavigationBlock.kt",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T10:01:50.144Z"
+    },
+    {
+      "id": "bug-031",
+      "timestamp": "2026-05-05T10:01:54.615Z",
+      "error_message": "Wrong return value",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/richtext/NavigationBlock.kt",
+      "root_cause": "Was returning: trimmed.startsWith(\"androidamap://\") && !trimmed.c",
+      "fix": "Now returns: trimmed.startsWith(\"androidamap://\", ignoreCase = ",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T10:01:54.615Z"
+    },
+    {
+      "id": "bug-032",
+      "timestamp": "2026-05-05T10:19:24.962Z",
+      "error_message": "Significant refactor of ",
+      "file": ".omc/test-plan-amap-url-detection.md",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 24→24 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T10:19:24.962Z"
+    },
+    {
+      "id": "bug-033",
+      "timestamp": "2026-05-05T10:24:19.344Z",
+      "error_message": "Null/undefined access in ",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTools.kt",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T10:24:19.344Z"
+    },
+    {
+      "id": "bug-034",
+      "timestamp": "2026-05-05T10:40:59.622Z",
+      "error_message": "Wrong reference: output should be isExecuted",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTools.kt",
+      "root_cause": "Used \"output\" instead of \"isExecuted\"",
+      "fix": "Changed output → isExecuted",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-05-05T10:41:55.838Z"
+    },
+    {
+      "id": "bug-035",
+      "timestamp": "2026-05-05T10:50:34.859Z",
+      "error_message": "Null/undefined access in ",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check) | Also: val texts = tool.output.filterIsInstance<UIMessagePart.Text>; texts.forEach { textPart ->",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-05-05T10:53:38.075Z"
+    },
+    {
+      "id": "bug-036",
+      "timestamp": "2026-05-05T10:51:16.500Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 16→24 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T10:51:16.500Z"
+    },
+    {
+      "id": "bug-037",
+      "timestamp": "2026-05-05T10:59:51.828Z",
+      "error_message": "Incorrect value in code",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/richtext/NavigationBlock.kt",
+      "root_cause": "Had \"viewMap\"",
+      "fix": "Changed to \"viewmap\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-05-05T10:59:52.246Z"
+    },
+    {
+      "id": "bug-038",
+      "timestamp": "2026-05-05T11:00:19.274Z",
+      "error_message": "Significant refactor of ",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 20→14 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T11:00:19.274Z"
+    },
+    {
+      "id": "bug-039",
+      "timestamp": "2026-05-05T11:00:19.593Z",
+      "error_message": "Wrong reference: isStandaloneAmapUrl should be parseAmapUrl",
+      "file": "app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt",
+      "root_cause": "Used \"isStandaloneAmapUrl\" instead of \"parseAmapUrl\"",
+      "fix": "Changed isStandaloneAmapUrl → parseAmapUrl",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T11:00:19.593Z"
+    },
+    {
+      "id": "bug-040",
+      "timestamp": "2026-05-05T11:17:11.958Z",
+      "error_message": "Incorrect value in code",
+      "file": "app/src/main/java/me/rerere/rikkahub/data/ai/tools/PhoneBridge.kt",
+      "root_cause": "Had \"androidamap://viewMap?sourceApplication=RikkaHub&",
+      "fix": "Changed to \"androidamap://viewMap?sourceApplication=RikkaHub&",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "kt"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T11:17:11.958Z"
     }
   ]
 }

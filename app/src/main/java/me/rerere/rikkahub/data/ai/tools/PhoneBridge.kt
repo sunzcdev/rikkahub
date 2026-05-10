@@ -913,10 +913,10 @@ class PhoneBridge(
                 append("sourceApplication=RikkaHub&")
                 append("slat=$fromLat&")
                 append("slon=$fromLng&")
-                append("sname=${Uri.encode(fromName ?: "Start")}&")
+                append("sname=${Uri.encode(fromName ?: fromLocation)}&")
                 append("dlat=$toLat&")
                 append("dlon=$toLng&")
-                append("dname=${Uri.encode(toName ?: "Destination")}&")
+                append("dname=${Uri.encode(toName ?: toLocation)}&")
                 append("dev=0&")
                 val t = when (routeType.lowercase()) {
                     "transit" -> 1
@@ -934,10 +934,12 @@ class PhoneBridge(
                     if (!fromName.isNullOrBlank()) {
                         append("sname=${Uri.encode(fromName)}&")
                     }
+                } else if (!fromName.isNullOrBlank()) {
+                    append("sname=${Uri.encode(fromName)}&")
                 }
                 append("dlat=$toLat&")
                 append("dlon=$toLng&")
-                append("dname=${Uri.encode(toName ?: "Destination")}&")
+                append("dname=${Uri.encode(toName ?: toLocation)}&")
                 append("dev=0&")
                 val t = when (routeType.lowercase()) {
                     "transit" -> 1
@@ -946,11 +948,18 @@ class PhoneBridge(
                 }
                 append("t=$t")
             } else {
-                // Only place names - use keyword navigation with destination, user can select start point in app
-                append("androidamap://keywordNavi?")
+                // No coordinates — use route format with names only (Amap resolves them)
+                append("androidamap://route?")
                 append("sourceApplication=RikkaHub&")
-                append("keyword=${Uri.encode(toName ?: toLocation)}&")
-                append("style=2")
+                append("sname=${Uri.encode(fromName ?: fromLocation)}&")
+                append("dname=${Uri.encode(toName ?: toLocation)}&")
+                append("dev=0&")
+                val t = when (routeType.lowercase()) {
+                    "transit" -> 1
+                    "walking" -> 2
+                    else -> 0 // driving
+                }
+                append("t=$t")
             }
         }
         Log.d(TAG, "handleAmapNavigate: built uri=$uri")
@@ -980,7 +989,7 @@ class PhoneBridge(
 
         // Build Amap URI
         val uri = if (lat != null && lng != null) {
-            "androidamap://viewMap?sourceApplication=RikkaHub&poiname=${Uri.encode(name ?: "Location")}&lat=$lat&lon=$lng&dev=0"
+            "androidamap://viewMap?sourceApplication=RikkaHub&poiname=${Uri.encode(name ?: location)}&lat=$lat&lon=$lng&dev=0"
         } else {
             "androidamap://keywordNavi?sourceApplication=RikkaHub&keyword=${Uri.encode(name ?: location)}&style=2"
         }

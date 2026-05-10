@@ -22,6 +22,8 @@
 - [2026-04-29] Getting Activity in Compose: `LocalActivity.current` not `LocalContext.current as? Activity`
 - [2026-04-29] Getting string resources in Compose: `stringResource(R.string.xxx)` in composable scope, or capture value pre-lambda. Never `context.getString()` in composable context
 - [2026-04-29] New strings.xml entries must be added to all 5 locale files (ru/ko/ja/zh/zh-rTW) or lint fails MissingTranslation
+- [2026-05-05] When using `uri.host?.lowercase()` in a `when` expression, all branch strings must be lowercase. `.lowercase()` output is all lowercase, so branch labels like `"viewMap"` won't match — use `"viewmap"` instead
+- [2026-05-05] Tool results (UIMessagePart.Tool with output Text parts) that render custom UI should be handled in MessagePartsBlock at the message level, not inside ChainOfThought content area. ChainOfThought has limited composable idle recycling that can suppress custom rendering
 
 ## Decision Log
 

@@ -211,6 +211,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = { Text(stringResource(R.string.setting_page_extensions_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_extensions)) },
                     )
+                    item(
+                        onClick = { navController.navigate(Screen.JijiSettings) },
+                        leadingContent = { Icon(HugeIcons.InLove, null) },
+                        supportingContent = { Text("唧唧主动式个人助手设置") },
+                        headlineContent = { Text("唧唧 (Jiji)") },
+                    )
                 }
             }
 
