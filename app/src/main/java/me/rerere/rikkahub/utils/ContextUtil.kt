@@ -13,7 +13,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
+import me.rerere.common.android.Logging
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.browser.customtabs.CustomTabsIntent
@@ -65,9 +65,9 @@ fun Context.writeClipboardText(text: String) {
         getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
     runCatching {
         clipboardManager.setPrimaryClip(android.content.ClipData.newPlainText("text", text))
-        Log.i(TAG, "writeClipboardText: $text")
+        Logging.i(TAG, "writeClipboardText: $text")
     }.onFailure {
-        Log.e(TAG, "writeClipboardText: $text", it)
+        Logging.e(TAG, "writeClipboardText: $text", it)
         Toast.makeText(this, "Failed to write text into clipboard", Toast.LENGTH_SHORT).show()
     }
 }
@@ -76,7 +76,7 @@ fun Context.writeClipboardText(text: String) {
  * Open a url
  */
 fun Context.openUrl(url: String) {
-    Log.i(TAG, "openUrl: $url")
+    Logging.i(TAG, "openUrl: $url")
     runCatching {
         val uri = url.toUri()
         val scheme = uri.scheme
@@ -168,9 +168,9 @@ fun Context.exportImage(
             mediaScanIntent.data = Uri.fromFile(image)
             sendBroadcast(mediaScanIntent)
         }
-        Log.i(TAG, "Image saved successfully: $fileName")
+        Logging.i(TAG, "Image saved successfully: $fileName")
     } catch (e: Exception) {
-        Log.e(TAG, "Failed to save image", e)
+        Logging.e(TAG, "Failed to save image", e)
     } finally {
         outputStream?.close()
     }
@@ -221,9 +221,9 @@ fun Context.exportImageFile(
             mediaScanIntent.data = Uri.fromFile(image)
             sendBroadcast(mediaScanIntent)
         }
-        Log.i(TAG, "Image file saved successfully: $fileName")
+        Logging.i(TAG, "Image file saved successfully: $fileName")
     } catch (e: Exception) {
-        Log.e(TAG, "Failed to save image file", e)
+        Logging.e(TAG, "Failed to save image file", e)
     } finally {
         outputStream?.close()
     }

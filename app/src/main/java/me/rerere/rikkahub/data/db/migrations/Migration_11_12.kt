@@ -1,7 +1,7 @@
 package me.rerere.rikkahub.data.db.migrations
 
 import android.database.sqlite.SQLiteBlobTooBigException
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.serialization.json.JsonArray
@@ -16,7 +16,7 @@ private const val TAG = "Migration_11_12"
 
 val Migration_11_12 = object : Migration(11, 12) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        Log.i(TAG, "migrate: start migrate from 11 to 12 (extracting message nodes to separate table)")
+        Logging.i(TAG, "migrate: start migrate from 11 to 12 (extracting message nodes to separate table)")
         DatabaseMigrationTracker.onMigrationStart(11, 12)
         db.beginTransaction()
         try {
@@ -85,14 +85,14 @@ val Migration_11_12 = object : Migration(11, 12) {
                     }
                 } catch (e: SQLiteBlobTooBigException) {
                     skippedCount++
-                    Log.w(TAG, "migrate: skip conversation $conversationId due to large nodes blob", e)
+                    Logging.w(TAG, "migrate: skip conversation $conversationId due to large nodes blob", e)
                     continue
                 }
             }
             cursor.close()
 
             db.setTransactionSuccessful()
-            Log.i(
+            Logging.i(
                 TAG,
                 "migrate: migrate from 11 to 12 success ($migratedCount conversations, $nodeCount nodes, $skippedCount skipped)"
             )

@@ -1,7 +1,7 @@
 package me.rerere.tts.controller
 
 import android.content.Context
-import android.util.Log
+import me.rerere.common.android.Logging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -259,7 +259,7 @@ class TtsController(
                         awaitOrCreate(chunk, provider)
                     } catch (e: Exception) {
                         if (e is CancellationException) throw e
-                        Log.e(TAG, "Synthesis error", e)
+                        Logging.e(TAG, "Synthesis error", e)
                         _error.update { e.message ?: "TTS synthesis error" }
                         processedCount++
                         continue
@@ -270,7 +270,7 @@ class TtsController(
                         audio.play(response)
                     } catch (e: Exception) {
                         if (e is CancellationException) throw e
-                        Log.e(TAG, "Playback error", e)
+                        Logging.e(TAG, "Playback error", e)
                         _error.update { e.message ?: "Audio playback error" }
                     }
 

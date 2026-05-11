@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.data.db.migrations
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import me.rerere.ai.ui.UIMessage
@@ -12,7 +12,7 @@ private const val TAG = "Migration_15_16"
 
 val Migration_15_16 = object : Migration(15, 16) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        Log.i(TAG, "migrate: start migrate from 15 to 16 (eager tool message migration)")
+        Logging.i(TAG, "migrate: start migrate from 15 to 16 (eager tool message migration)")
         DatabaseMigrationTracker.onMigrationStart(15, 16)
         db.beginTransaction()
         try {
@@ -44,7 +44,7 @@ val Migration_15_16 = object : Migration(15, 16) {
                         val messages = JsonInstant.decodeFromString<List<UIMessage>>(messagesJson)
                         rows.add(NodeRow(id, messages, selectIndex))
                     }.onFailure {
-                        Log.w(TAG, "migrate: failed to parse messages for node $id", it)
+                        Logging.w(TAG, "migrate: failed to parse messages for node $id", it)
                     }
                 }
                 nodeCursor.close()
@@ -76,7 +76,7 @@ val Migration_15_16 = object : Migration(15, 16) {
             }
 
             db.setTransactionSuccessful()
-            Log.i(TAG, "migrate: migrate from 15 to 16 success ($updatedConversations conversations updated)")
+            Logging.i(TAG, "migrate: migrate from 15 to 16 success ($updatedConversations conversations updated)")
         } finally {
             db.endTransaction()
             DatabaseMigrationTracker.onMigrationEnd()

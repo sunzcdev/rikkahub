@@ -4,7 +4,7 @@ import android.Manifest
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.annotation.RequiresPermission
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,11 +64,11 @@ class AudioRecorder(
             record.startRecording()
             isRecording = true
             _state.value = RecorderState.Recording
-            Log.d(TAG, "Recording started: ${sampleRate}Hz, 16-bit mono")
+            Logging.d(TAG, "Recording started: ${sampleRate}Hz, 16-bit mono")
 
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start recording", e)
+            Logging.e(TAG, "Failed to start recording", e)
             _state.value = RecorderState.Error
             Result.failure(e)
         }
@@ -102,11 +102,11 @@ class AudioRecorder(
 
             val wavData = pcmToWav(pcmData, sampleRate)
             _state.value = RecorderState.Completed
-            Log.d(TAG, "Recording stopped: ${pcmData.size} bytes PCM → ${wavData.size} bytes WAV")
+            Logging.d(TAG, "Recording stopped: ${pcmData.size} bytes PCM → ${wavData.size} bytes WAV")
 
             Result.success(wavData)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to stop recording", e)
+            Logging.e(TAG, "Failed to stop recording", e)
             _state.value = RecorderState.Error
             Result.failure(e)
         }

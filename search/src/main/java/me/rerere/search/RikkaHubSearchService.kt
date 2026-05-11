@@ -1,6 +1,6 @@
 package me.rerere.search
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -61,7 +61,7 @@ object RikkaHubSearchService : SearchService<SearchServiceOptions.RikkaHubOption
                 .addHeader("Content-Type", "application/json")
                 .build()
 
-            Log.i(TAG, "search: $query")
+            Logging.i(TAG, "search: $query")
 
             val response = httpClient.newCall(request).await()
             if (response.isSuccessful) {

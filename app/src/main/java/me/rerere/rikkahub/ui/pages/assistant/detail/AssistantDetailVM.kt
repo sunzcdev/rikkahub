@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.ui.pages.assistant.detail
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -106,7 +106,7 @@ class AssistantDetailVM(
                     tags = tagIds.toList()
                 )
             )
-            Log.d(TAG, "updateTags: ${tagIds.joinToString(",")}")
+            Logging.d(TAG, "updateTags: ${tagIds.joinToString(",")}")
             cleanupUnusedTags()
         }
     }
@@ -230,7 +230,7 @@ class AssistantDetailVM(
                     filesManager.deleteChatFiles(listOf(oldUri))
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to delete background file: $oldBackground", e)
+                Logging.w(TAG, "Failed to delete background file: $oldBackground", e)
             }
         }
     }

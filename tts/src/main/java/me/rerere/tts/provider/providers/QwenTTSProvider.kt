@@ -2,7 +2,7 @@ package me.rerere.tts.provider.providers
 
 import android.content.Context
 import android.util.Base64
-import android.util.Log
+import me.rerere.common.android.Logging
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import me.rerere.tts.model.AudioChunk
@@ -38,7 +38,7 @@ class QwenTTSProvider : TTSProvider<TTSProviderSetting.Qwen> {
             })
         }
 
-        Log.i(TAG, "generateSpeech: $requestBody")
+        Logging.i(TAG, "generateSpeech: $requestBody")
 
         val httpRequest = Request.Builder()
             .url("${providerSetting.baseUrl}/services/aigc/multimodal-generation/generation")
@@ -52,7 +52,7 @@ class QwenTTSProvider : TTSProvider<TTSProviderSetting.Qwen> {
 
         if (!response.isSuccessful) {
             val errorBody = response.body.string()
-            Log.e(TAG, "Qwen TTS request failed: ${response.code} ${response.message}, body: $errorBody")
+            Logging.e(TAG, "Qwen TTS request failed: ${response.code} ${response.message}, body: $errorBody")
             throw Exception("Qwen TTS request failed: ${response.code} ${response.message}")
         }
 
@@ -113,7 +113,7 @@ class QwenTTSProvider : TTSProvider<TTSProviderSetting.Qwen> {
                 null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse SSE data: $data", e)
+            Logging.e(TAG, "Failed to parse SSE data: $data", e)
             null
         }
     }

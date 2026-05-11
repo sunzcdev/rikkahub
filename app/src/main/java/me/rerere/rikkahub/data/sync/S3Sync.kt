@@ -1,7 +1,7 @@
 package me.rerere.rikkahub.data.sync
 
 import android.content.Context
-import android.util.Log
+import me.rerere.common.android.Logging
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -40,7 +40,7 @@ class S3Sync(
         val client = getS3Client(config)
         // Test by listing objects with max 1 result
         client.listObjects(maxKeys = 1).getOrThrow()
-        Log.i(TAG, "testS3: Connection successful")
+        Logging.i(TAG, "testS3: Connection successful")
     }
 
     suspend fun backupToS3(config: S3Config) = withContext(Dispatchers.IO) {
@@ -54,7 +54,7 @@ class S3Sync(
             contentType = "application/zip"
         ).getOrThrow()
 
-        Log.i(TAG, "backupToS3: Uploaded ${file.name} (${file.length().fileSizeToString()})")
+        Logging.i(TAG, "backupToS3: Uploaded ${file.name} (${file.length().fileSizeToString()})")
 
         // Clean up temp file
         file.delete()
@@ -86,10 +86,10 @@ class S3Sync(
 
         try {
             // Download backup file directly to file to avoid OOM
-            Log.i(TAG, "restoreFromS3: Downloading ${item.displayName}")
+            Logging.i(TAG, "restoreFromS3: Downloading ${item.displayName}")
             client.downloadObjectToFile(item.key, backupFile).getOrThrow()
 
-            Log.i(TAG, "restoreFromS3: Downloaded ${backupFile.length().fileSizeToString()}")
+            Logging.i(TAG, "restoreFromS3: Downloaded ${backupFile.length().fileSizeToString()}")
 
             // Restore from backup file
             restoreFromBackupFile(backupFile, config)
@@ -97,7 +97,7 @@ class S3Sync(
             // Clean up temp file
             if (backupFile.exists()) {
                 backupFile.delete()
-                Log.i(TAG, "restoreFromS3: Cleaned up temporary backup file")
+                Logging.i(TAG, "restoreFromS3: Cleaned up temporary backup file")
             }
         }
     }
@@ -105,7 +105,7 @@ class S3Sync(
     suspend fun deleteS3BackupFile(config: S3Config, item: S3BackupItem) = withContext(Dispatchers.IO) {
         val client = getS3Client(config)
         client.deleteObject(item.key).getOrThrow()
-        Log.i(TAG, "deleteS3BackupFile: Deleted ${item.key}")
+        Logging.i(TAG, "deleteS3BackupFile: Deleted ${item.key}")
     }
 
     suspend fun prepareBackupFile(config: S3Config): File = withContext(Dispatchers.IO) {
@@ -146,19 +146,19 @@ class S3Sync(
             if (config.items.contains(S3Config.BackupItem.FILES)) {
                 val uploadFolder = File(context.filesDir, FileFolders.UPLOAD)
                 if (uploadFolder.exists() && uploadFolder.isDirectory) {
-                    Log.i(TAG, "prepareBackupFile: Backing up files from ${uploadFolder.absolutePath}")
+                    Logging.i(TAG, "prepareBackupFile: Backing up files from ${uploadFolder.absolutePath}")
                     uploadFolder.listFiles()?.forEach { file ->
                         if (file.isFile) {
                             addFileToZip(zipOut, file, "${FileFolders.UPLOAD}/${file.name}")
                         }
                     }
                 } else {
-                    Log.w(TAG, "prepareBackupFile: Upload folder does not exist or is not a directory")
+                    Logging.w(TAG, "prepareBackupFile: Upload folder does not exist or is not a directory")
                 }
 
                 val skillsFolder = File(context.filesDir, FileFolders.SKILLS)
                 if (skillsFolder.exists() && skillsFolder.isDirectory) {
-                    Log.i(TAG, "prepareBackupFile: Backing up skills from ${skillsFolder.absolutePath}")
+                    Logging.i(TAG, "prepareBackupFile: Backing up skills from ${skillsFolder.absolutePath}")
                     addDirectoryToZip(
                         zipOut = zipOut,
                         rootDir = skillsFolder,
@@ -166,12 +166,12 @@ class S3Sync(
                         entryPrefix = "${FileFolders.SKILLS}/"
                     )
                 } else {
-                    Log.w(TAG, "prepareBackupFile: Skills folder does not exist or is not a directory")
+                    Logging.w(TAG, "prepareBackupFile: Skills folder does not exist or is not a directory")
                 }
             }
         }
 
-        Log.i(
+        Logging.i(
             TAG,
             "prepareBackupFile: Created backup file ${backupFile.name} (${backupFile.length().fileSizeToString()})"
         )
@@ -179,25 +179,25 @@ class S3Sync(
     }
 
     private suspend fun restoreFromBackupFile(backupFile: File, config: S3Config) = withContext(Dispatchers.IO) {
-        Log.i(TAG, "restoreFromBackupFile: Starting restore from ${backupFile.absolutePath}")
+        Logging.i(TAG, "restoreFromBackupFile: Starting restore from ${backupFile.absolutePath}")
 
         ZipInputStream(FileInputStream(backupFile)).use { zipIn ->
             var entry: ZipEntry?
             while (zipIn.nextEntry.also { entry = it } != null) {
                 entry?.let { zipEntry ->
-                    Log.i(TAG, "restoreFromBackupFile: Processing entry ${zipEntry.name}")
+                    Logging.i(TAG, "restoreFromBackupFile: Processing entry ${zipEntry.name}")
 
                     when (zipEntry.name) {
                         "settings.json" -> {
                             val settingsJson = zipIn.readBytes().toString(Charsets.UTF_8)
-                            Log.i(TAG, "restoreFromBackupFile: Restoring settings")
+                            Logging.i(TAG, "restoreFromBackupFile: Restoring settings")
                             try {
                                 val migratedJson = SettingsJsonMigrator.migrate(settingsJson)
                                 val settings = json.decodeFromString<Settings>(migratedJson)
                                 settingsStore.update(settings)
-                                Log.i(TAG, "restoreFromBackupFile: Settings restored successfully")
+                                Logging.i(TAG, "restoreFromBackupFile: Settings restored successfully")
                             } catch (e: Exception) {
-                                Log.e(TAG, "restoreFromBackupFile: Failed to restore settings", e)
+                                Logging.e(TAG, "restoreFromBackupFile: Failed to restore settings", e)
                                 throw Exception("Failed to restore settings: ${e.message}")
                             }
                         }
@@ -220,7 +220,7 @@ class S3Sync(
                                 }
 
                                 dbFile?.let { targetFile ->
-                                    Log.i(
+                                    Logging.i(
                                         TAG,
                                         "restoreFromBackupFile: Restoring ${zipEntry.name} to ${targetFile.absolutePath}"
                                     )
@@ -228,7 +228,7 @@ class S3Sync(
                                     FileOutputStream(targetFile).use { outputStream ->
                                         zipIn.copyTo(outputStream)
                                     }
-                                    Log.i(
+                                    Logging.i(
                                         TAG,
                                         "restoreFromBackupFile: Restored ${zipEntry.name} (${targetFile.length()} bytes)"
                                     )
@@ -245,11 +245,11 @@ class S3Sync(
                                     val uploadFolder = File(context.filesDir, FileFolders.UPLOAD)
                                     if (!uploadFolder.exists()) {
                                         uploadFolder.mkdirs()
-                                        Log.i(TAG, "restoreFromBackupFile: Created upload directory")
+                                        Logging.i(TAG, "restoreFromBackupFile: Created upload directory")
                                     }
 
                                     val targetFile = File(uploadFolder, fileName)
-                                    Log.i(
+                                    Logging.i(
                                         TAG,
                                         "restoreFromBackupFile: Restoring file ${zipEntry.name} to ${targetFile.absolutePath}"
                                     )
@@ -258,12 +258,12 @@ class S3Sync(
                                         FileOutputStream(targetFile).use { outputStream ->
                                             zipIn.copyTo(outputStream)
                                         }
-                                        Log.i(
+                                        Logging.i(
                                             TAG,
                                             "restoreFromBackupFile: Restored ${zipEntry.name} (${targetFile.length()} bytes)"
                                         )
                                     } catch (e: Exception) {
-                                        Log.e(TAG, "restoreFromBackupFile: Failed to restore file ${zipEntry.name}", e)
+                                        Logging.e(TAG, "restoreFromBackupFile: Failed to restore file ${zipEntry.name}", e)
                                         throw Exception("Failed to restore file ${zipEntry.name}: ${e.message}")
                                     }
                                 }
@@ -272,7 +272,7 @@ class S3Sync(
                             ) {
                                 restoreSkillEntry(zipIn, zipEntry.name)
                             } else {
-                                Log.i(TAG, "restoreFromBackupFile: Skipping entry ${zipEntry.name}")
+                                Logging.i(TAG, "restoreFromBackupFile: Skipping entry ${zipEntry.name}")
                             }
                         }
                     }
@@ -282,7 +282,7 @@ class S3Sync(
             }
         }
 
-        Log.i(TAG, "restoreFromBackupFile: Restore completed successfully")
+        Logging.i(TAG, "restoreFromBackupFile: Restore completed successfully")
     }
 
     private fun addFileToZip(zipOut: ZipOutputStream, file: File, entryName: String) {
@@ -291,7 +291,7 @@ class S3Sync(
             zipOut.putNextEntry(zipEntry)
             fis.copyTo(zipOut)
             zipOut.closeEntry()
-            Log.d(TAG, "addFileToZip: Added $entryName (${file.length()} bytes) to zip")
+            Logging.d(TAG, "addFileToZip: Added $entryName (${file.length()} bytes) to zip")
         }
     }
 
@@ -322,7 +322,7 @@ class S3Sync(
         val skillRelativePath = relativePath.substringAfter('/', missingDelimiterValue = "")
 
         if (skillName.isBlank() || skillRelativePath.isBlank()) {
-            Log.w(TAG, "restoreFromBackupFile: Invalid skill entry $entryName")
+            Logging.w(TAG, "restoreFromBackupFile: Invalid skill entry $entryName")
             return
         }
 
@@ -339,9 +339,9 @@ class S3Sync(
             FileOutputStream(targetFile).use { outputStream ->
                 zipIn.copyTo(outputStream)
             }
-            Log.i(TAG, "restoreFromBackupFile: Restored skill file $entryName (${targetFile.length()} bytes)")
+            Logging.i(TAG, "restoreFromBackupFile: Restored skill file $entryName (${targetFile.length()} bytes)")
         } catch (e: Exception) {
-            Log.e(TAG, "restoreFromBackupFile: Failed to restore skill file $entryName", e)
+            Logging.e(TAG, "restoreFromBackupFile: Failed to restore skill file $entryName", e)
             throw Exception("Failed to restore skill file $entryName: ${e.message}")
         }
     }
@@ -351,7 +351,7 @@ class S3Sync(
         zipOut.putNextEntry(zipEntry)
         zipOut.write(content.toByteArray())
         zipOut.closeEntry()
-        Log.i(TAG, "addVirtualFileToZip: $name (${content.length} bytes)")
+        Logging.i(TAG, "addVirtualFileToZip: $name (${content.length} bytes)")
     }
 }
 

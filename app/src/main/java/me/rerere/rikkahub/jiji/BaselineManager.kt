@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.jiji
 
-import android.util.Log
+import me.rerere.common.android.Logging
 
 /**
  * 基线管理器

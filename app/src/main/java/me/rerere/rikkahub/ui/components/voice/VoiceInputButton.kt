@@ -2,7 +2,7 @@ package me.rerere.rikkahub.ui.components.voice
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -130,7 +130,7 @@ fun VoiceInputButton(
                                                 onVoiceResult(sttResult.text)
                                             }
                                         } catch (e: Exception) {
-                                            Log.e(TAG, "STT failed", e)
+                                            Logging.e(TAG, "STT failed", e)
                                         }
                                     }
                                 }

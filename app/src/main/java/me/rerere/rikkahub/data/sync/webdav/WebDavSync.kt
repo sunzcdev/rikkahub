@@ -1,7 +1,7 @@
 package me.rerere.rikkahub.data.sync.webdav
 
 import android.content.Context
-import android.util.Log
+import me.rerere.common.android.Logging
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,7 +39,7 @@ class WebDavSync(
         val client = getClient(config)
         // Test by listing the root directory
         client.propfind(depth = 0).getOrThrow()
-        Log.i(TAG, "testConnection: Connection successful")
+        Logging.i(TAG, "testConnection: Connection successful")
     }
 
     suspend fun backup(config: WebDavConfig) = withContext(Dispatchers.IO) {
@@ -56,7 +56,7 @@ class WebDavSync(
             contentType = "application/zip"
         ).getOrThrow()
 
-        Log.i(TAG, "backup: Uploaded ${file.name} (${file.length().fileSizeToString()})")
+        Logging.i(TAG, "backup: Uploaded ${file.name} (${file.length().fileSizeToString()})")
 
         // Clean up temp file
         file.delete()
@@ -89,10 +89,10 @@ class WebDavSync(
 
         try {
             // Download backup file directly to file to avoid OOM
-            Log.i(TAG, "restore: Downloading ${item.displayName}")
+            Logging.i(TAG, "restore: Downloading ${item.displayName}")
             client.downloadToFile(item.displayName, backupFile).getOrThrow()
 
-            Log.i(TAG, "restore: Downloaded ${backupFile.length().fileSizeToString()}")
+            Logging.i(TAG, "restore: Downloaded ${backupFile.length().fileSizeToString()}")
 
             // Restore from backup file
             restoreFromBackupFile(backupFile, config)
@@ -100,7 +100,7 @@ class WebDavSync(
             // Clean up temp file
             if (backupFile.exists()) {
                 backupFile.delete()
-                Log.i(TAG, "restore: Cleaned up temporary backup file")
+                Logging.i(TAG, "restore: Cleaned up temporary backup file")
             }
         }
     }
@@ -108,11 +108,11 @@ class WebDavSync(
     suspend fun deleteBackupFile(config: WebDavConfig, item: WebDavBackupItem) = withContext(Dispatchers.IO) {
         val client = getClient(config)
         client.delete(item.displayName).getOrThrow()
-        Log.i(TAG, "deleteBackupFile: Deleted ${item.displayName}")
+        Logging.i(TAG, "deleteBackupFile: Deleted ${item.displayName}")
     }
 
     suspend fun restoreFromLocalFile(file: File, config: WebDavConfig) = withContext(Dispatchers.IO) {
-        Log.i(TAG, "restoreFromLocalFile: Starting restore from ${file.absolutePath}")
+        Logging.i(TAG, "restoreFromLocalFile: Starting restore from ${file.absolutePath}")
 
         if (!file.exists()) {
             throw Exception("Backup file does not exist")
@@ -124,9 +124,9 @@ class WebDavSync(
 
         try {
             restoreFromBackupFile(file, config)
-            Log.i(TAG, "restoreFromLocalFile: Restore completed successfully")
+            Logging.i(TAG, "restoreFromLocalFile: Restore completed successfully")
         } catch (e: Exception) {
-            Log.e(TAG, "restoreFromLocalFile: Failed to restore from local file", e)
+            Logging.e(TAG, "restoreFromLocalFile: Failed to restore from local file", e)
             throw Exception("Restore failed: ${e.message}")
         }
     }
@@ -169,19 +169,19 @@ class WebDavSync(
             if (config.items.contains(WebDavConfig.BackupItem.FILES)) {
                 val uploadFolder = File(context.filesDir, FileFolders.UPLOAD)
                 if (uploadFolder.exists() && uploadFolder.isDirectory) {
-                    Log.i(TAG, "prepareBackupFile: Backing up files from ${uploadFolder.absolutePath}")
+                    Logging.i(TAG, "prepareBackupFile: Backing up files from ${uploadFolder.absolutePath}")
                     uploadFolder.listFiles()?.forEach { file ->
                         if (file.isFile) {
                             addFileToZip(zipOut, file, "${FileFolders.UPLOAD}/${file.name}")
                         }
                     }
                 } else {
-                    Log.w(TAG, "prepareBackupFile: Upload folder does not exist or is not a directory")
+                    Logging.w(TAG, "prepareBackupFile: Upload folder does not exist or is not a directory")
                 }
 
                 val skillsFolder = File(context.filesDir, FileFolders.SKILLS)
                 if (skillsFolder.exists() && skillsFolder.isDirectory) {
-                    Log.i(TAG, "prepareBackupFile: Backing up skills from ${skillsFolder.absolutePath}")
+                    Logging.i(TAG, "prepareBackupFile: Backing up skills from ${skillsFolder.absolutePath}")
                     addDirectoryToZip(
                         zipOut = zipOut,
                         rootDir = skillsFolder,
@@ -189,12 +189,12 @@ class WebDavSync(
                         entryPrefix = "${FileFolders.SKILLS}/"
                     )
                 } else {
-                    Log.w(TAG, "prepareBackupFile: Skills folder does not exist or is not a directory")
+                    Logging.w(TAG, "prepareBackupFile: Skills folder does not exist or is not a directory")
                 }
             }
         }
 
-        Log.i(
+        Logging.i(
             TAG,
             "prepareBackupFile: Created backup file ${backupFile.name} (${backupFile.length().fileSizeToString()})"
         )
@@ -202,25 +202,25 @@ class WebDavSync(
     }
 
     private suspend fun restoreFromBackupFile(backupFile: File, config: WebDavConfig) = withContext(Dispatchers.IO) {
-        Log.i(TAG, "restoreFromBackupFile: Starting restore from ${backupFile.absolutePath}")
+        Logging.i(TAG, "restoreFromBackupFile: Starting restore from ${backupFile.absolutePath}")
 
         ZipInputStream(FileInputStream(backupFile)).use { zipIn ->
             var entry: ZipEntry?
             while (zipIn.nextEntry.also { entry = it } != null) {
                 entry?.let { zipEntry ->
-                    Log.i(TAG, "restoreFromBackupFile: Processing entry ${zipEntry.name}")
+                    Logging.i(TAG, "restoreFromBackupFile: Processing entry ${zipEntry.name}")
 
                     when (zipEntry.name) {
                         "settings.json" -> {
                             val settingsJson = zipIn.readBytes().toString(Charsets.UTF_8)
-                            Log.i(TAG, "restoreFromBackupFile: Restoring settings")
+                            Logging.i(TAG, "restoreFromBackupFile: Restoring settings")
                             try {
                                 val migratedJson = SettingsJsonMigrator.migrate(settingsJson)
                                 val settings = json.decodeFromString<Settings>(migratedJson)
                                 settingsStore.update(settings)
-                                Log.i(TAG, "restoreFromBackupFile: Settings restored successfully")
+                                Logging.i(TAG, "restoreFromBackupFile: Settings restored successfully")
                             } catch (e: Exception) {
-                                Log.e(TAG, "restoreFromBackupFile: Failed to restore settings", e)
+                                Logging.e(TAG, "restoreFromBackupFile: Failed to restore settings", e)
                                 throw Exception("Failed to restore settings: ${e.message}")
                             }
                         }
@@ -243,7 +243,7 @@ class WebDavSync(
                                 }
 
                                 dbFile?.let { targetFile ->
-                                    Log.i(
+                                    Logging.i(
                                         TAG,
                                         "restoreFromBackupFile: Restoring ${zipEntry.name} to ${targetFile.absolutePath}"
                                     )
@@ -251,7 +251,7 @@ class WebDavSync(
                                     FileOutputStream(targetFile).use { outputStream ->
                                         zipIn.copyTo(outputStream)
                                     }
-                                    Log.i(
+                                    Logging.i(
                                         TAG,
                                         "restoreFromBackupFile: Restored ${zipEntry.name} (${targetFile.length()} bytes)"
                                     )
@@ -268,11 +268,11 @@ class WebDavSync(
                                     val uploadFolder = File(context.filesDir, FileFolders.UPLOAD)
                                     if (!uploadFolder.exists()) {
                                         uploadFolder.mkdirs()
-                                        Log.i(TAG, "restoreFromBackupFile: Created upload directory")
+                                        Logging.i(TAG, "restoreFromBackupFile: Created upload directory")
                                     }
 
                                     val targetFile = File(uploadFolder, fileName)
-                                    Log.i(
+                                    Logging.i(
                                         TAG,
                                         "restoreFromBackupFile: Restoring file ${zipEntry.name} to ${targetFile.absolutePath}"
                                     )
@@ -281,12 +281,12 @@ class WebDavSync(
                                         FileOutputStream(targetFile).use { outputStream ->
                                             zipIn.copyTo(outputStream)
                                         }
-                                        Log.i(
+                                        Logging.i(
                                             TAG,
                                             "restoreFromBackupFile: Restored ${zipEntry.name} (${targetFile.length()} bytes)"
                                         )
                                     } catch (e: Exception) {
-                                        Log.e(TAG, "restoreFromBackupFile: Failed to restore file ${zipEntry.name}", e)
+                                        Logging.e(TAG, "restoreFromBackupFile: Failed to restore file ${zipEntry.name}", e)
                                         throw Exception("Failed to restore file ${zipEntry.name}: ${e.message}")
                                     }
                                 }
@@ -295,7 +295,7 @@ class WebDavSync(
                             ) {
                                 restoreSkillEntry(zipIn, zipEntry.name)
                             } else {
-                                Log.i(TAG, "restoreFromBackupFile: Skipping entry ${zipEntry.name}")
+                                Logging.i(TAG, "restoreFromBackupFile: Skipping entry ${zipEntry.name}")
                             }
                         }
                     }
@@ -305,7 +305,7 @@ class WebDavSync(
             }
         }
 
-        Log.i(TAG, "restoreFromBackupFile: Restore completed successfully")
+        Logging.i(TAG, "restoreFromBackupFile: Restore completed successfully")
     }
 
     private fun addFileToZip(zipOut: ZipOutputStream, file: File, entryName: String) {
@@ -314,7 +314,7 @@ class WebDavSync(
             zipOut.putNextEntry(zipEntry)
             fis.copyTo(zipOut)
             zipOut.closeEntry()
-            Log.d(TAG, "addFileToZip: Added $entryName (${file.length()} bytes) to zip")
+            Logging.d(TAG, "addFileToZip: Added $entryName (${file.length()} bytes) to zip")
         }
     }
 
@@ -345,7 +345,7 @@ class WebDavSync(
         val skillRelativePath = relativePath.substringAfter('/', missingDelimiterValue = "")
 
         if (skillName.isBlank() || skillRelativePath.isBlank()) {
-            Log.w(TAG, "restoreFromBackupFile: Invalid skill entry $entryName")
+            Logging.w(TAG, "restoreFromBackupFile: Invalid skill entry $entryName")
             return
         }
 
@@ -362,9 +362,9 @@ class WebDavSync(
             FileOutputStream(targetFile).use { outputStream ->
                 zipIn.copyTo(outputStream)
             }
-            Log.i(TAG, "restoreFromBackupFile: Restored skill file $entryName (${targetFile.length()} bytes)")
+            Logging.i(TAG, "restoreFromBackupFile: Restored skill file $entryName (${targetFile.length()} bytes)")
         } catch (e: Exception) {
-            Log.e(TAG, "restoreFromBackupFile: Failed to restore skill file $entryName", e)
+            Logging.e(TAG, "restoreFromBackupFile: Failed to restore skill file $entryName", e)
             throw Exception("Failed to restore skill file $entryName: ${e.message}")
         }
     }
@@ -374,7 +374,7 @@ class WebDavSync(
         zipOut.putNextEntry(zipEntry)
         zipOut.write(content.toByteArray())
         zipOut.closeEntry()
-        Log.i(TAG, "addVirtualFileToZip: $name (${content.length} bytes)")
+        Logging.i(TAG, "addVirtualFileToZip: $name (${content.length} bytes)")
     }
 }
 

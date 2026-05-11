@@ -275,6 +275,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = { Text("管理 API Key 配置（高德地图、OpenWeather 等）") },
                         headlineContent = { Text(stringResource(R.string.phone_bridge_title)) },
                     )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingPerception) },
+                        leadingContent = { Icon(HugeIcons.Brain02, null) },
+                        supportingContent = { Text("唧唧的感知数据，包括位置和天气历史") },
+                        headlineContent = { Text("感知数据管理") },
+                    )
                 }
             }
 

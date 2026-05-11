@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.data.db.fts
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.rerere.ai.ui.UIMessage
@@ -69,7 +69,7 @@ class MessageFtsManager(private val database: AppDatabase) {
             """.trimIndent(),
             arrayOf(keyword)
         )
-        Log.i(TAG, "search: $keyword")
+        Logging.i(TAG, "search: $keyword")
         cursor.use {
             while (it.moveToNext()) {
                 results.add(

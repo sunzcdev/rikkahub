@@ -15,6 +15,13 @@ data class JijiContext(
 data class LocationInfo(
     val city: String,
     val district: String?,
+    val street: String? = null,
+    val streetNum: String? = null,
+    val poiName: String? = null,     // 附近地标/大厦
+    val aoiName: String? = null,     // 商圈/区域
+    val address: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val isHome: Boolean? = null,
     val isWork: Boolean? = null,
 )

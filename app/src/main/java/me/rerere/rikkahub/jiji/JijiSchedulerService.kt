@@ -7,7 +7,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import kotlinx.coroutines.*
@@ -84,7 +84,7 @@ class JijiSchedulerService : Service(), CoroutineScope {
                     isRunning = true
                     startForegroundCompat()
                     startCheckCycle()
-                    Log.i(TAG, "Jiji scheduler started")
+                    Logging.i(TAG, "Jiji scheduler started")
                 }
             }
             ACTION_STOP -> {
@@ -92,7 +92,7 @@ class JijiSchedulerService : Service(), CoroutineScope {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 isRunning = false
-                Log.i(TAG, "Jiji scheduler stopped")
+                Logging.i(TAG, "Jiji scheduler stopped")
             }
             ACTION_CHECK_NOW -> {
                 launch { runCheckCycle() }
@@ -141,12 +141,14 @@ class JijiSchedulerService : Service(), CoroutineScope {
 
     private fun startCheckCycle() {
         checkJob?.cancel()
+        // 启动感知采集器
+        perceptionManager.collector.start(this)
         checkJob = launch {
-            Log.i(TAG, "Check cycle started")
+            Logging.i(TAG, "Check cycle started")
             while (isActive) {
                 runCheckCycle()
                 val config = jijiConfigStore.getConfig()
-                Log.d(TAG, "Cycle done, next check in ${config.checkIntervalMinutes}min")
+                Logging.d(TAG, "Cycle done, next check in ${config.checkIntervalMinutes}min")
                 delay(config.checkIntervalMinutes * 60 * 1000L)
             }
         }
@@ -155,6 +157,7 @@ class JijiSchedulerService : Service(), CoroutineScope {
     private fun stopCheckCycle() {
         checkJob?.cancel()
         checkJob = null
+        perceptionManager.collector.stop()
     }
 
     /**
@@ -237,17 +240,17 @@ class JijiSchedulerService : Service(), CoroutineScope {
                         )
                     )
 
-                    Log.i(TAG, "Jiji proactive: ${bestDeviation.description} -> $message")
+                    Logging.i(TAG, "Jiji proactive: ${bestDeviation.description} -> $message")
                 } else if (bestDeviation != null) {
-                    Log.d(TAG, "Deferred: ${bestDeviation.type} rel=${bestDeviation.relevance} (cooldown/daily limit)")
+                    Logging.d(TAG, "Deferred: ${bestDeviation.type} rel=${bestDeviation.relevance} (cooldown/daily limit)")
                 }
             } else if (bestDeviation != null) {
-                Log.d(TAG, "Skipped: ${bestDeviation.type} rel=${bestDeviation.relevance} (< 0.5)")
+                Logging.d(TAG, "Skipped: ${bestDeviation.type} rel=${bestDeviation.relevance} (< 0.5)")
             } else {
-                Log.d(TAG, "No deviation detected (lastInteraction=${context.lastInteractionMinutes}min)")
+                Logging.d(TAG, "No deviation detected (lastInteraction=${context.lastInteractionMinutes}min)")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Jiji check cycle failed", e)
+            Logging.e(TAG, "Jiji check cycle failed", e)
         }
     }
 
@@ -266,7 +269,7 @@ class JijiSchedulerService : Service(), CoroutineScope {
                 messageNodes = emptyList(),
             )
             conversationRepository.insertConversation(conversation)
-            Log.i(TAG, "Jiji conversation created")
+            Logging.i(TAG, "Jiji conversation created")
         }
 
         // 添加一条 ASSISTANT 消息
@@ -350,17 +353,17 @@ class JijiSchedulerService : Service(), CoroutineScope {
         deviation: Deviation, context: JijiContext,
         lastTopic: String, recentMemories: List<String>,
     ): String? {
-        Log.d(TAG, "generateWithAI: deviation=${deviation.type} topic='$lastTopic'")
+        Logging.d(TAG, "generateWithAI: deviation=${deviation.type} topic='$lastTopic'")
         return try {
             val settings = settingsStore.settingsFlow.value
             val model = settings.findModelById(settings.suggestionModelId)
             if (model == null) {
-                Log.w(TAG, "AI generation aborted: suggestionModelId=${settings.suggestionModelId} not found in any provider's models")
+                Logging.w(TAG, "AI generation aborted: suggestionModelId=${settings.suggestionModelId} not found in any provider's models")
                 return null
             }
             val provider = model.findProvider(settings.providers)
             if (provider == null) {
-                Log.w(TAG, "AI generation aborted: provider not found for model ${model.modelId}")
+                Logging.w(TAG, "AI generation aborted: provider not found for model ${model.modelId}")
                 return null
             }
             val handler = providerManager.getProviderByType(provider)
@@ -368,6 +371,8 @@ class JijiSchedulerService : Service(), CoroutineScope {
             // 构建场景描述（给 AI 的上下文）
             val city = context.location?.city ?: ""
             val district = context.location?.district ?: ""
+            val poiName = context.location?.poiName
+            val address = context.location?.address
             val weatherInfo = context.weather?.let { w ->
                 "${w.condition} ${w.temperature}°C ${w.description}"
             } ?: "未获取"
@@ -396,6 +401,9 @@ class JijiSchedulerService : Service(), CoroutineScope {
                 DeviationType.UPCOMING_EVENT -> "用户记忆中有即将到来的事件"
             }
 
+            // 短期感知记忆
+            val perceptionText = perceptionManager.getShortTermMemory()
+
             // 沉默时长
             val silentMinutes = deviation.description.substringAfter("用户已")
                 .substringBefore("分钟").toIntOrNull() ?: 0
@@ -406,21 +414,26 @@ class JijiSchedulerService : Service(), CoroutineScope {
 当前场景：
 - 时间：$dayOfWeek ${hour}点
 ${if (isWeekend) "- 今天是周末" else ""}
-${if (city.isNotEmpty()) "- 位置：$city $district" else ""}
+${if (city.isNotEmpty()) {
+    val locStr = buildString {
+        append(city)
+        if (!district.isNullOrBlank()) append(" $district")
+        if (!poiName.isNullOrBlank()) append(" $poiName")
+    }
+    "- 位置：$locStr"
+} else ""}
 - 天气：$weatherInfo
 - 用户上次和你聊天是 ${silentHours}小时前
 - 触发原因：$deviationTypeCN
 ${if (lastTopic.isNotBlank()) "- 上次聊天话题：$lastTopic" else ""}
 
+$perceptionText
+
 要求：
 1. 语气像好朋友随口说话，自然口语化，简短（20-50字）
 2. 结合场景信息自然地融入对话中
-3. 如果天气不好（下雨/下雪/太热/太冷），关心一下
-4. 如果周末+好天气+用户在家，推荐出去玩
-5. 如果用户有话题，自然引用上次聊的内容
-6. 如果是工作日白天，暗示用户该上班/该下班了
-7. **不要用「亲」「亲爱的」「宝宝」等肉麻称呼**
-8. 一句话说完，不要分段
+3. 如果用户有话题，自然引用上次聊的内容
+4. 一句话说完，不要分段
 
 直接输出搭话内容本身："""
 
@@ -437,24 +450,24 @@ ${if (lastTopic.isNotBlank()) "- 上次聊天话题：$lastTopic" else ""}
             
             val choice = result.choices.firstOrNull()
             if (choice == null) {
-                Log.w(TAG, "AI response: choices is empty, result.id=${result.id}")
+                Logging.w(TAG, "AI response: choices is empty, result.id=${result.id}")
                 return null
             }
             val message = choice.message
             if (message == null) {
-                Log.w(TAG, "AI response: choice.message is null (finishReason=${choice.finishReason})")
+                Logging.w(TAG, "AI response: choice.message is null (finishReason=${choice.finishReason})")
                 return null
             }
             val text = message.toText().trim()
             if (text.isBlank()) {
-                Log.w(TAG, "AI response: toText() returned blank. parts=${message.parts.map { it::class.simpleName }}")
+                Logging.w(TAG, "AI response: toText() returned blank. parts=${message.parts.map { it::class.simpleName }}")
                 return null
             }
             
-            Log.i(TAG, "AI generated message: $text")
+            Logging.i(TAG, "AI generated message: $text")
             text
         } catch (e: Exception) {
-            Log.w(TAG, "AI generation failed, using rule-based fallback", e)
+            Logging.w(TAG, "AI generation failed, using rule-based fallback", e)
             null
         }
     }

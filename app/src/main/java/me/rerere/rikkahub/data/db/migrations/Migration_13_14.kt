@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.data.db.migrations
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import me.rerere.rikkahub.data.db.DatabaseMigrationTracker
@@ -9,7 +9,7 @@ private const val TAG = "Migration_13_14"
 
 val Migration_13_14 = object : Migration(13, 14) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        Log.i(TAG, "migrate: start migrate from 13 to 14 (UIMessagePart type -> @SerialName)")
+        Logging.i(TAG, "migrate: start migrate from 13 to 14 (UIMessagePart type -> @SerialName)")
         DatabaseMigrationTracker.onMigrationStart(13, 14)
         db.beginTransaction()
         try {
@@ -29,7 +29,7 @@ val Migration_13_14 = object : Migration(13, 14) {
             }
             cursor.close()
             db.setTransactionSuccessful()
-            Log.i(TAG, "migrate: migrate from 13 to 14 success ($updatedCount nodes updated)")
+            Logging.i(TAG, "migrate: migrate from 13 to 14 success ($updatedCount nodes updated)")
         } finally {
             db.endTransaction()
             DatabaseMigrationTracker.onMigrationEnd()

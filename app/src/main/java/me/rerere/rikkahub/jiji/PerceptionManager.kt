@@ -1,29 +1,55 @@
 package me.rerere.rikkahub.jiji
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import me.rerere.rikkahub.data.ai.tools.WeatherFetcher
 import me.rerere.rikkahub.data.model.HardwareKeyConfig
 import me.rerere.rikkahub.data.model.findHardwareKey
+import me.rerere.rikkahub.data.perception.PerceptionCollector
+import me.rerere.rikkahub.data.perception.PerceptionMemory
+import me.rerere.rikkahub.data.perception.PerceptionStore
 import java.util.Calendar
 
 /**
- * 感知管理器——收集时间、位置、天气信息
+ * 感知管理器——协调感知采集 + 存储 + 上下文输出
  *
  * 位置获取：复用高德地图（Amap）定位方案，通过 JijiLocationProvider 获取
- * 天气获取：每天最多请求 1 次，通过 OpenWeatherMap API
+ * 天气获取：通过 OpenWeatherMap API
+ *
+ * 采集器定时运行，数据经熵驱动存入 PerceptionStore。
+ * 短期记忆从 Store 取最近 100 条输出到 JIJI prompt。
+ * 长期记忆通过 query_perception tool 按需查询。
  */
 class PerceptionManager(
     private val weatherFetcher: WeatherFetcher,
     private val locationProvider: JijiLocationProvider,
+    private val perceptionStore: PerceptionStore,
     private val getHardwareKeys: () -> List<HardwareKeyConfig>,
 ) {
     companion object {
         private const val TAG = "PerceptionManager"
-        private const val WEATHER_CACHE_TTL_MS = 12L * 60 * 60 * 1000 // 12小时
     }
 
-    private var cachedWeather: WeatherInfo? = null
-    private var cachedWeatherTime: Long = 0L
+    /** 感知采集器 */
+    val collector: PerceptionCollector = PerceptionCollector(
+        perceptionStore = perceptionStore,
+        locationProvider = locationProvider,
+        weatherFetcher = weatherFetcher,
+        getHardwareKeys = getHardwareKeys,
+    )
+
+    /**
+     * 获取感知短期记忆文本（用于注入 JIJI prompt）
+     */
+    suspend fun getShortTermMemory(): String {
+        return perceptionStore.getMemory().toShortTermText()
+    }
+
+    /**
+     * 获取完整感知记忆（用于 query_perception tool）
+     */
+    suspend fun getMemory(): PerceptionMemory {
+        return perceptionStore.getMemory()
+    }
 
     /**
      * 获取当前时间描述（如 "周六下午2点"）
@@ -69,40 +95,33 @@ class PerceptionManager(
 
     /**
      * 获取天气
-     * 每天最多请求 1 次（12小时缓存）
      */
     suspend fun getWeather(config: JijiConfig): WeatherInfo? {
         if (!config.weatherEnabled) return null
 
         val now = System.currentTimeMillis()
 
-        // 12小时内不重复请求
-        if (cachedWeather != null && (now - cachedWeatherTime) < WEATHER_CACHE_TTL_MS) {
-            return cachedWeather
-        }
-
         val apiKey = getHardwareKeys().findHardwareKey<HardwareKeyConfig.OpenWeather>()?.apiKey
         if (apiKey.isNullOrBlank()) return null
 
         val location = getLocation() ?: return null
-        val result = weatherFetcher.fetchWeather(location.city, apiKey)
+        val lat = location.latitude
+        val lon = location.longitude
+        if (lat == null || lon == null) return null
+        val result = weatherFetcher.fetchWeather(lat, lon, apiKey)
             ?: return null
 
-        val info = WeatherInfo(
+        return WeatherInfo(
             condition = result.condition,
             description = "${result.description} / ${result.temperature}°C",
             temperature = result.temperature,
             humidity = result.humidity,
             lastUpdated = now,
         )
-
-        cachedWeather = info
-        cachedWeatherTime = now
-        return info
     }
 
     /**
-     * 收集完整上下文
+     * 收集完整上下文（用于偏差检测和搭话生成）
      */
     suspend fun collectContext(
         config: JijiConfig,

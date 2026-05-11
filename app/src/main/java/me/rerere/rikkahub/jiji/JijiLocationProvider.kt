@@ -3,7 +3,7 @@ package me.rerere.rikkahub.jiji
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.core.content.ContextCompat
 import com.amap.api.location.AMapLocationClient
 import com.amap.api.location.AMapLocationClientOption
@@ -27,7 +27,7 @@ class JijiLocationProvider(
 ) {
     companion object {
         private const val TAG = "JijiLocationProvider"
-        private const val LOCATION_CACHE_TTL_MS = 15L * 60 * 1000 // 15分钟
+        private const val LOCATION_CACHE_TTL_MS = 1L * 60 * 1000 // 1分钟
     }
 
     private var cachedLocation: LocationInfo? = null
@@ -41,7 +41,7 @@ class JijiLocationProvider(
 
         // 15分钟缓存有效
         if (cachedLocation != null && (now - cachedTime) < LOCATION_CACHE_TTL_MS) {
-            Log.d(TAG, "Returning cached location: ${cachedLocation?.city}")
+            Logging.d(TAG, "Returning cached location: ${cachedLocation?.city}")
             return cachedLocation
         }
 
@@ -50,19 +50,19 @@ class JijiLocationProvider(
                 context, Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.w(TAG, "ACCESS_FINE_LOCATION not granted")
+            Logging.w(TAG, "ACCESS_FINE_LOCATION not granted")
             return null
         }
 
         // 后台定位检查（Android 10+），仅日志记录，不阻塞——唧唧在前台服务中运行
         if (LocationPermissionHelper.needsBackgroundLocationGuide(context)) {
-            Log.w(TAG, "Background location not granted, location may not work when app is in background")
+            Logging.w(TAG, "Background location not granted, location may not work when app is in background")
         }
 
         // API Key 检查
         val apiKey = getHardwareKeys().findHardwareKey<HardwareKeyConfig.Amap>()?.apiKey
         if (apiKey.isNullOrBlank()) {
-            Log.w(TAG, "Amap API key not configured")
+            Logging.w(TAG, "Amap API key not configured")
             return null
         }
 
@@ -97,7 +97,7 @@ class JijiLocationProvider(
                     isOnceLocation = true
                     isNeedAddress = true
                     httpTimeOut = 10000
-                    isLocationCacheEnable = true
+                    isLocationCacheEnable = false
                 }
                 client.setLocationOption(option)
                 client.setLocationListener { loc ->
@@ -105,6 +105,13 @@ class JijiLocationProvider(
                         LocationInfo(
                             city = loc.city ?: loc.province ?: "未知",
                             district = loc.district,
+                            street = loc.street,
+                            streetNum = loc.streetNum,
+                            poiName = loc.poiName,
+                            aoiName = loc.aoiName,
+                            address = loc.address,
+                            latitude = loc.latitude,
+                            longitude = loc.longitude,
                         )
                     } else {
                         null
@@ -121,7 +128,7 @@ class JijiLocationProvider(
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Amap location failed", e)
+            Logging.e(TAG, "Amap location failed", e)
             null
         }
     }

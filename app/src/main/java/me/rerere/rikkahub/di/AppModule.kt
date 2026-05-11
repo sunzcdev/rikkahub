@@ -43,6 +43,7 @@ val appModule = module {
             context = get(),
             eventBus = get(),
             getHardwareKeys = { settingsStore.settingsFlow.value.hardwareKeys },
+            perceptionStore = get(),
             weatherFetcher = get(),
         )
     }

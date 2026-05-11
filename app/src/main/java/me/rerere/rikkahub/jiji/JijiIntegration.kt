@@ -1,7 +1,7 @@
 package me.rerere.rikkahub.jiji
 
 import android.content.Context
-import android.util.Log
+import me.rerere.common.android.Logging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -89,7 +89,7 @@ class JijiIntegration(
             settings.copy(assistants = settings.assistants + jijiAssistant)
         )
 
-        Log.i(TAG, "Jiji assistant created")
+        Logging.i(TAG, "Jiji assistant created")
         return jijiAssistant
     }
 

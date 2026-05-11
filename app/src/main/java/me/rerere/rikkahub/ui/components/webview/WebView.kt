@@ -2,7 +2,7 @@ package me.rerere.rikkahub.ui.components.webview
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
-import android.util.Log
+import me.rerere.common.android.Logging
 import android.view.ViewGroup.LayoutParams
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
@@ -37,7 +37,7 @@ internal class MyWebChromeClient(private val state: WebViewState) : WebChromeCli
     override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
         state.pushConsoleMessage(consoleMessage)
         if (consoleMessage.messageLevel() == ConsoleMessage.MessageLevel.ERROR || consoleMessage.messageLevel() == ConsoleMessage.MessageLevel.WARNING) {
-            Log.e(
+            Logging.e(
                 TAG,
                 "onConsoleMessage:  ${consoleMessage.message()}  ${consoleMessage.lineNumber()}  ${consoleMessage.sourceId()}"
             )
@@ -109,14 +109,14 @@ fun WebView(
                 state.interfaces.forEach { (name, _) ->
                     it.removeJavascriptInterface(name)
                 }
-                Log.d(TAG, "AndroidView: Resetting WebView")
+                Logging.d(TAG, "AndroidView: Resetting WebView")
             },
             update = { webView ->
                 state.webView = webView
                 state.interfaces.forEach { (name, obj) ->
                     webView.addJavascriptInterface(obj, name)
                 }
-                Log.d(TAG, "AndroidView: Updating WebView")
+                Logging.d(TAG, "AndroidView: Updating WebView")
                 // Ensure clients are updated if state changes (though unlikely here)
                 // webView.webChromeClient = webChromeClient
                 // webView.webViewClient = webViewClient

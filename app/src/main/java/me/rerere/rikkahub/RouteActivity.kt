@@ -121,6 +121,8 @@ import me.rerere.rikkahub.ui.pages.setting.SettingSTTPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTTSPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHardwareBridgePage
+import me.rerere.rikkahub.ui.pages.setting.SettingPerceptionPage
+import me.rerere.rikkahub.ui.pages.setting.SettingPerceptionHistoryPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.stats.StatsPage
 import me.rerere.rikkahub.ui.pages.translator.TranslatorPage
@@ -487,6 +489,14 @@ class RouteActivity : ComponentActivity() {
                                 SettingHardwareBridgePage()
                             }
 
+                            entry<Screen.SettingPerception> {
+                                SettingPerceptionPage()
+                            }
+
+                            entry<Screen.SettingPerceptionHistory> {
+                                SettingPerceptionHistoryPage()
+                            }
+
                             entry<Screen.Developer> {
                                 DeveloperPage()
                             }
@@ -685,6 +695,12 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingHardwareBridge : Screen
+
+    @Serializable
+    data object SettingPerception : Screen
+
+    @Serializable
+    data object SettingPerceptionHistory : Screen
 
     @Serializable
     data object Developer : Screen

@@ -13,6 +13,7 @@ import io.requery.android.database.sqlite.SQLiteCustomExtension
 import kotlinx.serialization.json.Json
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.common.http.AcceptLanguageBuilder
+import me.rerere.common.android.Logging
 import me.rerere.rikkahub.BuildConfig
 import me.rerere.rikkahub.data.ai.AIRequestInterceptor
 import me.rerere.rikkahub.data.ai.RequestLoggingInterceptor
@@ -62,7 +63,7 @@ val dataSourceModule = module {
                             val result = it.getString(0)
                             val success = result?.trimEnd('/') == dictDir.absolutePath.trimEnd('/')
                             if (!success) {
-                                android.util.Log.e(
+                                Logging.e(
                                     "DataSourceModule",
                                     "jieba_dict failed: $result, path=${dictDir.absolutePath}"
                                 )

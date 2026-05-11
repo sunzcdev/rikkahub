@@ -1,7 +1,7 @@
 package me.rerere.rikkahub.data.ai
 
 import android.content.Context
-import android.util.Log
+import me.rerere.common.android.Logging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,10 +83,10 @@ class GenerationHandler(
         var messages: List<UIMessage> = messages
 
         for (stepIndex in 0 until maxSteps) {
-            Log.i(TAG, "streamText: start step #$stepIndex (${model.id})")
+            Logging.i(TAG, "streamText: start step #$stepIndex (${model.id})")
 
             val toolsInternal = buildList {
-                Log.i(TAG, "generateInternal: build tools($assistant)")
+                Logging.i(TAG, "generateInternal: build tools($assistant)")
                 if (assistant?.enableMemory == true) {
                     val memoryAssistantId = if (assistant.useGlobalMemory) {
                         MemoryRepository.GLOBAL_MEMORY_ID
@@ -213,14 +213,14 @@ class GenerationHandler(
 
                 // If there are pending approvals, break and wait for user
                 if (hasPendingApproval) {
-                    Log.i(TAG, "generateText: waiting for tool approval")
+                    Logging.i(TAG, "generateText: waiting for tool approval")
                     break
                 }
 
                 toolsToProcess = updatedTools
             } else {
                 // Resuming after user interaction - use the resumable tools directly.
-                Log.i(TAG, "generateText: resuming with ${pendingTools.size} resumable tools")
+                Logging.i(TAG, "generateText: resuming with ${pendingTools.size} resumable tools")
                 toolsToProcess = messages.last().getTools().filter { it.canResumeExecution }
             }
 
@@ -267,7 +267,7 @@ class GenerationHandler(
                             val toolDef = toolsInternal.find { toolDef -> toolDef.name == tool.toolName }
                                 ?: error("Tool ${tool.toolName} not found")
                             val args = json.parseToJsonElement(tool.input.ifBlank { "{}" })
-                            Log.i(TAG, "generateText: executing tool ${toolDef.name} with args: $args")
+                            Logging.i(TAG, "generateText: executing tool ${toolDef.name} with args: $args")
                             val result = toolDef.execute(args)
                             executedTools += tool.copy(output = result)
                         }.onFailure {

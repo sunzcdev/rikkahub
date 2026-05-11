@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.service
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -41,11 +41,11 @@ class ConversationSession(
 
     fun acquire(): Int = refCount.incrementAndGet().also {
         cancelIdleCheck()
-        Log.d(TAG, "acquire $id (refs=$it)")
+        Logging.d(TAG, "acquire $id (refs=$it)")
     }
 
     fun release(): Int = refCount.decrementAndGet().also {
-        Log.d(TAG, "release $id (refs=$it)")
+        Logging.d(TAG, "release $id (refs=$it)")
         if (it <= 0) scheduleIdleCheck()
     }
 

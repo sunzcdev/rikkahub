@@ -1,7 +1,7 @@
 package me.rerere.rikkahub.data.datastore
 
 import android.content.Context
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.datastore.core.IOException
 import androidx.datastore.preferences.SharedPreferencesMigration
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -356,7 +356,7 @@ class SettingsStore(
 
     suspend fun update(settings: Settings) {
         if(settings.init) {
-            Log.w(TAG, "Cannot update dummy settings")
+            Logging.w(TAG, "Cannot update dummy settings")
             return
         }
         settingsFlow.value = settings

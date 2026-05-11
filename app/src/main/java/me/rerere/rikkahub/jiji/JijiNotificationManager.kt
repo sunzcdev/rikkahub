@@ -4,7 +4,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -43,7 +43,7 @@ class JijiNotificationManager(private val context: Context) {
             .setShowBadge(true)
             .build()
         notificationManager.createNotificationChannel(channel)
-        Log.i(TAG, "Jiji notification channel created")
+        Logging.i(TAG, "Jiji notification channel created")
     }
 
     /**

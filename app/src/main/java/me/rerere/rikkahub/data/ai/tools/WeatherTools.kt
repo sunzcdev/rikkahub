@@ -1,6 +1,8 @@
 package me.rerere.rikkahub.data.ai.tools
 
-import android.util.Log
+import me.rerere.common.android.Logging
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -34,6 +36,43 @@ class WeatherFetcher(
     }
 
     /**
+     * 获取指定坐标的天气（推荐方式，city name 方式已弃用）
+     * @param lat 纬度
+     * @param lon 经度
+     * @param apiKey OpenWeatherMap API Key
+     */
+    suspend fun fetchWeather(lat: Double, lon: Double, apiKey: String): WeatherResult? {
+        return try {
+            val url = "$BASE_URL?lat=$lat&lon=$lon&appid=$apiKey&units=metric&lang=zh_cn"
+            val request = Request.Builder()
+                .url(url)
+                .get()
+                .build()
+
+            val response = withContext(Dispatchers.IO) {
+                client.newCall(request).execute()
+            }
+            if (!response.isSuccessful) {
+                val errBody = response.body?.string() ?: "no body"
+                throw Exception("OpenWeather API ${response.code}: $errBody")
+            }
+
+            val body = response.body?.string() ?: return null
+            val dto = json.decodeFromString<OpenWeatherResponse>(body)
+            WeatherResult(
+                condition = dto.weather.firstOrNull()?.main ?: "Unknown",
+                description = dto.weather.firstOrNull()?.description ?: "",
+                temperature = (dto.main.temp).toInt(),
+                humidity = dto.main.humidity,
+                cityName = dto.name,
+            )
+        } catch (e: Exception) {
+            Logging.e(TAG, "Failed to fetch weather by coords", e)
+            throw Exception("天气API请求异常: ${e.message}")
+        }
+    }
+
+    /**
      * 获取指定城市的天气
      * @param city 城市名（中文或英文）
      * @param apiKey OpenWeatherMap API Key
@@ -46,9 +85,11 @@ class WeatherFetcher(
                 .get()
                 .build()
 
-            val response = client.newCall(request).execute()
+            val response = withContext(Dispatchers.IO) {
+                client.newCall(request).execute()
+            }
             if (!response.isSuccessful) {
-                Log.w(TAG, "Weather API error: ${response.code} ${response.message}")
+                Logging.w(TAG, "Weather API error: ${response.code} ${response.message}")
                 return null
             }
 
@@ -62,7 +103,7 @@ class WeatherFetcher(
                 cityName = dto.name,
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to fetch weather", e)
+            Logging.e(TAG, "Failed to fetch weather", e)
             null
         }
     }
