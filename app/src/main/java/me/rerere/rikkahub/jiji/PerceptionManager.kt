@@ -1,6 +1,9 @@
 package me.rerere.rikkahub.jiji
 
 import android.util.Log
+import me.rerere.rikkahub.data.ai.tools.WeatherFetcher
+import me.rerere.rikkahub.data.model.HardwareKeyConfig
+import me.rerere.rikkahub.data.model.findHardwareKey
 import java.util.Calendar
 
 /**
@@ -12,6 +15,7 @@ import java.util.Calendar
 class PerceptionManager(
     private val weatherFetcher: WeatherFetcher,
     private val locationProvider: JijiLocationProvider,
+    private val getHardwareKeys: () -> List<HardwareKeyConfig>,
 ) {
     companion object {
         private const val TAG = "PerceptionManager"
@@ -68,7 +72,7 @@ class PerceptionManager(
      * 每天最多请求 1 次（12小时缓存）
      */
     suspend fun getWeather(config: JijiConfig): WeatherInfo? {
-        if (!config.weatherEnabled || config.openWeatherApiKey.isBlank()) return null
+        if (!config.weatherEnabled) return null
 
         val now = System.currentTimeMillis()
 
@@ -77,8 +81,11 @@ class PerceptionManager(
             return cachedWeather
         }
 
+        val apiKey = getHardwareKeys().findHardwareKey<HardwareKeyConfig.OpenWeather>()?.apiKey
+        if (apiKey.isNullOrBlank()) return null
+
         val location = getLocation() ?: return null
-        val result = weatherFetcher.fetchWeather(location.city, config.openWeatherApiKey)
+        val result = weatherFetcher.fetchWeather(location.city, apiKey)
             ?: return null
 
         val info = WeatherInfo(

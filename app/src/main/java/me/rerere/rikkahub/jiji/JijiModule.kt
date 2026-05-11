@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.jiji
 
+import me.rerere.rikkahub.data.ai.tools.WeatherFetcher
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import org.koin.dsl.module
 
@@ -8,8 +9,6 @@ import org.koin.dsl.module
  */
 val jijiModule = module {
     single { JijiConfigStore(get()) }
-
-    single { WeatherFetcher() }
 
     single { BaselineManager() }
 
@@ -22,7 +21,7 @@ val jijiModule = module {
     single {
         JijiLocationProvider(
             context = get(),
-            getAmapApiKey = { get<SettingsStore>().settingsFlow.value.amapApiKey }
+            getHardwareKeys = { get<SettingsStore>().settingsFlow.value.hardwareKeys },
         )
     }
 
@@ -30,6 +29,7 @@ val jijiModule = module {
         PerceptionManager(
             weatherFetcher = get(),
             locationProvider = get(),
+            getHardwareKeys = { get<SettingsStore>().settingsFlow.value.hardwareKeys },
         )
     }
 

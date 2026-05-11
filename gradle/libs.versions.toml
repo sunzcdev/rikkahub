@@ -62,7 +62,7 @@ sqlite-vector = "0.9.92"
 jmdns = "3.6.3"
 slf4j = "2.0.17"
 sqlite-android = "-SNAPSHOT"
-amap-location = "6.4.1"
+amap-location = "11.1.200"
 
 [libraries]
 amapLocation = { module = "com.amap.api:location", version.ref = "amap-location" }

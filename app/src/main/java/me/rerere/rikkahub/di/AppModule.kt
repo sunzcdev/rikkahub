@@ -12,6 +12,7 @@ import me.rerere.rikkahub.data.ai.GenerationHandler
 import me.rerere.rikkahub.data.ai.groupchat.AutoDiscussManager
 import me.rerere.rikkahub.data.ai.groupchat.GroupChatManager
 import me.rerere.rikkahub.data.ai.tools.LocalTools
+import me.rerere.rikkahub.data.ai.tools.WeatherFetcher
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.event.AppEventBus
 import me.rerere.rikkahub.service.ChatService
@@ -37,10 +38,16 @@ val appModule = module {
     }
 
     single {
-        LocalTools(get(), get()) {
-            get<SettingsStore>().settingsFlow.value.amapApiKey
-        }
+        val settingsStore = get<SettingsStore>()
+        LocalTools(
+            context = get(),
+            eventBus = get(),
+            getHardwareKeys = { settingsStore.settingsFlow.value.hardwareKeys },
+            weatherFetcher = get(),
+        )
     }
+
+    single { WeatherFetcher() }
 
     single {
         UpdateChecker(get())

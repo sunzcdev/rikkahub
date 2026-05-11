@@ -350,10 +350,19 @@ class JijiSchedulerService : Service(), CoroutineScope {
         deviation: Deviation, context: JijiContext,
         lastTopic: String, recentMemories: List<String>,
     ): String? {
+        Log.d(TAG, "generateWithAI: deviation=${deviation.type} topic='$lastTopic'")
         return try {
             val settings = settingsStore.settingsFlow.value
-            val model = settings.findModelById(settings.suggestionModelId) ?: return null
-            val provider = model.findProvider(settings.providers) ?: return null
+            val model = settings.findModelById(settings.suggestionModelId)
+            if (model == null) {
+                Log.w(TAG, "AI generation aborted: suggestionModelId=${settings.suggestionModelId} not found in any provider's models")
+                return null
+            }
+            val provider = model.findProvider(settings.providers)
+            if (provider == null) {
+                Log.w(TAG, "AI generation aborted: provider not found for model ${model.modelId}")
+                return null
+            }
             val handler = providerManager.getProviderByType(provider)
 
             // 构建场景描述（给 AI 的上下文）
@@ -421,14 +430,24 @@ ${if (lastTopic.isNotBlank()) "- 上次聊天话题：$lastTopic" else ""}
                 params = me.rerere.ai.provider.TextGenerationParams(
                     model = model,
                     temperature = 0.8f,
-                    maxTokens = 100,
+                    maxTokens = 200,
                     reasoningLevel = me.rerere.ai.core.ReasoningLevel.OFF,
                 ),
             )
             
-            val text = result.choices.firstOrNull()?.message?.toText()?.trim()
-            if (text.isNullOrBlank()) {
-                Log.d(TAG, "AI returned empty response, using rule-based fallback")
+            val choice = result.choices.firstOrNull()
+            if (choice == null) {
+                Log.w(TAG, "AI response: choices is empty, result.id=${result.id}")
+                return null
+            }
+            val message = choice.message
+            if (message == null) {
+                Log.w(TAG, "AI response: choice.message is null (finishReason=${choice.finishReason})")
+                return null
+            }
+            val text = message.toText().trim()
+            if (text.isBlank()) {
+                Log.w(TAG, "AI response: toText() returned blank. parts=${message.parts.map { it::class.simpleName }}")
                 return null
             }
             

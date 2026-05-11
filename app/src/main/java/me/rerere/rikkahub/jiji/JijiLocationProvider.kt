@@ -8,6 +8,9 @@ import androidx.core.content.ContextCompat
 import com.amap.api.location.AMapLocationClient
 import com.amap.api.location.AMapLocationClientOption
 import kotlinx.coroutines.suspendCancellableCoroutine
+import me.rerere.rikkahub.data.model.HardwareKeyConfig
+import me.rerere.rikkahub.data.model.findHardwareKey
+import me.rerere.rikkahub.ui.components.ui.permission.LocationPermissionHelper
 import kotlin.coroutines.resume
 
 /**
@@ -20,7 +23,7 @@ import kotlin.coroutines.resume
  */
 class JijiLocationProvider(
     private val context: Context,
-    private val getAmapApiKey: () -> String?,
+    private val getHardwareKeys: () -> List<HardwareKeyConfig>,
 ) {
     companion object {
         private const val TAG = "JijiLocationProvider"
@@ -51,8 +54,13 @@ class JijiLocationProvider(
             return null
         }
 
+        // 后台定位检查（Android 10+），仅日志记录，不阻塞——唧唧在前台服务中运行
+        if (LocationPermissionHelper.needsBackgroundLocationGuide(context)) {
+            Log.w(TAG, "Background location not granted, location may not work when app is in background")
+        }
+
         // API Key 检查
-        val apiKey = getAmapApiKey()
+        val apiKey = getHardwareKeys().findHardwareKey<HardwareKeyConfig.Amap>()?.apiKey
         if (apiKey.isNullOrBlank()) {
             Log.w(TAG, "Amap API key not configured")
             return null

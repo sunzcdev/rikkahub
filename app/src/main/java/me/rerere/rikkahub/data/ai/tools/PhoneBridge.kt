@@ -30,6 +30,9 @@ import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.event.AppEvent
 import me.rerere.rikkahub.data.event.AppEventBus
+import me.rerere.rikkahub.data.model.HardwareKeyConfig
+import me.rerere.rikkahub.data.model.findHardwareKey
+import me.rerere.rikkahub.ui.components.ui.permission.LocationPermissionHelper
 import java.io.File
 import kotlin.coroutines.resume
 
@@ -38,7 +41,7 @@ private const val TAG = "PhoneBridge"
 class PhoneBridge(
     private val context: Context,
     private val eventBus: AppEventBus,
-    private val getAmapApiKey: () -> String?
+    private val getHardwareKeys: () -> List<HardwareKeyConfig>,
 ) {
     val vibrateTool by lazy {
         Tool(
@@ -354,8 +357,14 @@ class PhoneBridge(
             ))
         }
 
-        val apiKey = getAmapApiKey()
-        Log.d(TAG, "handleGetLocation: API Key from settings: ${if (apiKey.isNullOrBlank()) "BLANK/NULL" else "first 8 chars: ${apiKey.take(8)}..."}")
+        // 后台定位检查（仅警告，不阻断——用户主动调用 get_location 应正常返回）
+        if (LocationPermissionHelper.needsBackgroundLocationGuide(context)) {
+            Log.w(TAG, "handleGetLocation: Background location not granted, proactive sensing may be limited")
+        }
+
+        val amapKey = getHardwareKeys().findHardwareKey<HardwareKeyConfig.Amap>()
+        val apiKey = amapKey?.apiKey
+        Log.d(TAG, "handleGetLocation: Amap key ${if (apiKey.isNullOrBlank()) "NOT configured" else "found: ${apiKey.take(8)}..."}")
         if (apiKey.isNullOrBlank()) {
             Log.w(TAG, "handleGetLocation: Amap API Key is not configured")
             return listOf(UIMessagePart.Text(
@@ -1011,7 +1020,8 @@ class PhoneBridge(
                         return Result.failure(RuntimeException("GPS permission not granted"))
                     }
 
-                    val apiKey = getAmapApiKey()
+                    val amapKeyConfig = getHardwareKeys().findHardwareKey<HardwareKeyConfig.Amap>()
+                    val apiKey = amapKeyConfig?.apiKey
                     if (apiKey.isNullOrBlank()) {
                         return Result.failure(RuntimeException("Amap API key not configured"))
                     }

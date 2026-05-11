@@ -16,6 +16,7 @@ import kotlinx.serialization.json.put
 import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.rikkahub.data.model.HardwareKeyConfig
 import me.rerere.rikkahub.data.event.AppEvent
 import me.rerere.rikkahub.data.event.AppEventBus
 import me.rerere.rikkahub.utils.readClipboardText
@@ -49,14 +50,20 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("phone_bridge")
     data object PhoneBridge : LocalToolOption()
+
+    @Serializable
+    @SerialName("weather")
+    data object Weather : LocalToolOption()
 }
 
 class LocalTools(
     private val context: Context,
     private val eventBus: AppEventBus,
-    private val getAmapApiKey: () -> String?
+    private val getHardwareKeys: () -> List<HardwareKeyConfig>,
+    private val weatherFetcher: WeatherFetcher = WeatherFetcher(),
 ) {
-    val phoneBridge by lazy { PhoneBridge(context, eventBus, getAmapApiKey) }
+    val phoneBridge by lazy { PhoneBridge(context, eventBus, getHardwareKeys) }
+    val weatherTool by lazy { WeatherTool(weatherFetcher, getHardwareKeys) }
 
     val javascriptTool by lazy {
         Tool(
@@ -333,6 +340,9 @@ class LocalTools(
         }
         if (options.contains(LocalToolOption.PhoneBridge)) {
             tools.addAll(phoneBridge.getAllTools())
+        }
+        if (options.contains(LocalToolOption.Weather)) {
+            tools.add(weatherTool.tool)
         }
         return tools
     }

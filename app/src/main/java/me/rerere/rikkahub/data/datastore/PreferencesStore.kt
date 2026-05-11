@@ -32,6 +32,7 @@ import me.rerere.rikkahub.data.ai.prompts.LEARNING_MODE_PROMPT
 import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV1Migration
 import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV2Migration
 import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV3Migration
+import me.rerere.rikkahub.data.model.HardwareKeyConfig
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.InjectionPosition
@@ -147,7 +148,13 @@ class SettingsStore(
         val SPONSOR_ALERT_DISMISSED_AT = intPreferencesKey("sponsor_alert_dismissed_at")
 
         // 硬件桥
-        val AMAP_API_KEY = stringPreferencesKey("amap_api_key")
+        val HARDWARE_KEYS = stringPreferencesKey("hardware_keys")
+
+        // 旧字段，仅迁移使用
+        @Deprecated("迁移到 hardwareKeys")
+        private val AMAP_API_KEY = stringPreferencesKey("amap_api_key")
+        @Deprecated("迁移到 hardwareKeys")
+        private val OPEN_WEATHER_API_KEY = stringPreferencesKey("open_weather_api_key")
     }
 
     private val dataStore = context.settingsStore
@@ -238,7 +245,17 @@ class SettingsStore(
                 } ?: BackupReminderConfig(),
                 launchCount = preferences[LAUNCH_COUNT] ?: 0,
                 sponsorAlertDismissedAt = preferences[SPONSOR_ALERT_DISMISSED_AT] ?: 0,
-                amapApiKey = preferences[AMAP_API_KEY] ?: "",
+                hardwareKeys = preferences[HARDWARE_KEYS]?.let {
+                    JsonInstant.decodeFromString(it)
+                } ?: run {
+                    // 迁移旧字段
+                    val oldAmap = preferences[AMAP_API_KEY] ?: ""
+                    val oldWeather = preferences[OPEN_WEATHER_API_KEY] ?: ""
+                    buildList {
+                        if (oldAmap.isNotBlank()) add(HardwareKeyConfig.Amap(apiKey = oldAmap))
+                        if (oldWeather.isNotBlank()) add(HardwareKeyConfig.OpenWeather(apiKey = oldWeather))
+                    }
+                },
             )
         }
         .map {
@@ -397,7 +414,7 @@ class SettingsStore(
             preferences[BACKUP_REMINDER_CONFIG] = JsonInstant.encodeToString(settings.backupReminderConfig)
             preferences[LAUNCH_COUNT] = settings.launchCount
             preferences[SPONSOR_ALERT_DISMISSED_AT] = settings.sponsorAlertDismissedAt
-            preferences[AMAP_API_KEY] = settings.amapApiKey
+            preferences[HARDWARE_KEYS] = JsonInstant.encodeToString(settings.hardwareKeys)
         }
     }
 
@@ -525,7 +542,7 @@ data class Settings(
     val backupReminderConfig: BackupReminderConfig = BackupReminderConfig(),
     val launchCount: Int = 0,
     val sponsorAlertDismissedAt: Int = 0,
-    val amapApiKey: String = "",
+    val hardwareKeys: List<HardwareKeyConfig> = emptyList(),
 ) {
     companion object {
         // 构造一个用于初始化的settings, 但它不能用于保存，防止使用初始值存储

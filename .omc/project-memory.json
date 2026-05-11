@@ -1,0 +1,674 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1777943368350,
+  "projectRoot": "/home/sunzc/AIProjects/rikkahub",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "Kotlin",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "build.gradle.kts"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "app",
+      "docs"
+    ],
+    "gitBranches": {
+      "defaultBranch": "master",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "ai": {
+      "path": "ai",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1777943368285,
+      "keyFiles": [
+        "README.md",
+        "build.gradle.kts",
+        "consumer-rules.pro",
+        "proguard-rules.pro"
+      ]
+    },
+    "app": {
+      "path": "app",
+      "purpose": "Application code",
+      "fileCount": 5,
+      "lastAccessed": 1777943368286,
+      "keyFiles": [
+        "build.gradle.kts",
+        "compose_compiler_config.conf",
+        "google-services.json",
+        "proguard-rules.pro"
+      ]
+    },
+    "common": {
+      "path": "common",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1777943368289,
+      "keyFiles": [
+        "build.gradle.kts",
+        "consumer-rules.pro",
+        "proguard-rules.pro"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 2,
+      "lastAccessed": 1777943368293,
+      "keyFiles": [
+        "donate.png",
+        "icon.png"
+      ]
+    },
+    "document": {
+      "path": "document",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1777943368300,
+      "keyFiles": [
+        "build.gradle.kts",
+        "consumer-rules.pro",
+        "proguard-rules.pro"
+      ]
+    },
+    "gradle": {
+      "path": "gradle",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1777943368302,
+      "keyFiles": [
+        "gradle-daemon-jvm.properties",
+        "libs.versions.toml"
+      ]
+    },
+    "highlight": {
+      "path": "highlight",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1777943368305,
+      "keyFiles": [
+        "build.gradle.kts",
+        "consumer-rules.pro",
+        "proguard-rules.pro"
+      ]
+    },
+    "locale-tui": {
+      "path": "locale-tui",
+      "purpose": null,
+      "fileCount": 7,
+      "lastAccessed": 1777943368306,
+      "keyFiles": [
+        "CLAUDE.md",
+        "README.md",
+        "config.yml",
+        "pyproject.toml",
+        "uv.lock"
+      ]
+    },
+    "search": {
+      "path": "search",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1777943368306,
+      "keyFiles": [
+        "build.gradle.kts",
+        "consumer-rules.pro",
+        "proguard-rules.pro"
+      ]
+    },
+    "stt": {
+      "path": "stt",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1777943368307,
+      "keyFiles": [
+        "build.gradle.kts",
+        "consumer-rules.pro",
+        "proguard-rules.pro"
+      ]
+    },
+    "talkio": {
+      "path": "talkio",
+      "purpose": null,
+      "fileCount": 14,
+      "lastAccessed": 1777943368308,
+      "keyFiles": [
+        "LICENSE",
+        "README-en.md",
+        "README.md",
+        "claude-code-rules.md",
+        "components.json"
+      ]
+    },
+    "tts": {
+      "path": "tts",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1777943368308,
+      "keyFiles": [
+        "build.gradle.kts",
+        "consumer-rules.pro",
+        "proguard-rules.pro"
+      ]
+    },
+    "web": {
+      "path": "web",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1777943368309,
+      "keyFiles": [
+        "build.gradle.kts",
+        "consumer-rules.pro",
+        "proguard-rules.pro"
+      ]
+    },
+    "web-ui": {
+      "path": "web-ui",
+      "purpose": null,
+      "fileCount": 14,
+      "lastAccessed": 1777943368310,
+      "keyFiles": [
+        "CLAUDE.md",
+        "README.md",
+        "bun.lock",
+        "components.json",
+        "copy.ts"
+      ]
+    },
+    "ai/build": {
+      "path": "ai/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1777943368313,
+      "keyFiles": []
+    },
+    "ai/src": {
+      "path": "ai/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1777943368314,
+      "keyFiles": []
+    },
+    "app/build": {
+      "path": "app/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1777943368315,
+      "keyFiles": []
+    },
+    "app/schemas": {
+      "path": "app/schemas",
+      "purpose": "Schema definitions",
+      "fileCount": 0,
+      "lastAccessed": 1777943368316,
+      "keyFiles": []
+    },
+    "app/src": {
+      "path": "app/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1777943368316,
+      "keyFiles": []
+    },
+    "common/build": {
+      "path": "common/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1777943368317,
+      "keyFiles": []
+    },
+    "common/src": {
+      "path": "common/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1777943368318,
+      "keyFiles": []
+    },
+    "document/build": {
+      "path": "document/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1777943368324,
+      "keyFiles": []
+    },
+    "document/src": {
+      "path": "document/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1777943368325,
+      "keyFiles": []
+    },
+    "highlight/build": {
+      "path": "highlight/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1777943368326,
+      "keyFiles": []
+    },
+    "highlight/src": {
+      "path": "highlight/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1777943368327,
+      "keyFiles": []
+    },
+    "locale-tui/src": {
+      "path": "locale-tui/src",
+      "purpose": "Source code",
+      "fileCount": 4,
+      "lastAccessed": 1777943368327,
+      "keyFiles": [
+        "__init__.py",
+        "app.py",
+        "config.py"
+      ]
+    },
+    "search/build": {
+      "path": "search/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1777943368328,
+      "keyFiles": []
+    },
+    "search/src": {
+      "path": "search/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1777943368329,
+      "keyFiles": []
+    },
+    "stt/build": {
+      "path": "stt/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1777943368330,
+      "keyFiles": []
+    },
+    "stt/src": {
+      "path": "stt/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1777943368331,
+      "keyFiles": []
+    },
+    "tts/build": {
+      "path": "tts/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1777943368336,
+      "keyFiles": []
+    },
+    "tts/src": {
+      "path": "tts/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1777943368346,
+      "keyFiles": []
+    },
+    "web/build": {
+      "path": "web/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1777943368349,
+      "keyFiles": []
+    },
+    "web/src": {
+      "path": "web/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1777943368350,
+      "keyFiles": []
+    },
+    "web-ui/app": {
+      "path": "web-ui/app",
+      "purpose": "Application code",
+      "fileCount": 4,
+      "lastAccessed": 1777943368350,
+      "keyFiles": [
+        "app.css",
+        "i18n.ts",
+        "root.tsx"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/ai/ChatSettingsBottomSheet.kt",
+      "accessCount": 65,
+      "lastAccessed": 1777642506980,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/main/ChatListTab.kt",
+      "accessCount": 62,
+      "lastAccessed": 1777612054019,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt",
+      "accessCount": 60,
+      "lastAccessed": 1777953989581,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/RouteActivity.kt",
+      "accessCount": 43,
+      "lastAccessed": 1777687552817,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/ai/ChatInput.kt",
+      "accessCount": 43,
+      "lastAccessed": 1777949827615,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/main/ContactsTab.kt",
+      "accessCount": 36,
+      "lastAccessed": 1777612838655,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatTopBar.kt",
+      "accessCount": 35,
+      "lastAccessed": 1777610424224,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt",
+      "accessCount": 31,
+      "lastAccessed": 1777978819625,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/data/datastore/PreferencesStore.kt",
+      "accessCount": 26,
+      "lastAccessed": 1777648490699,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/assistant/detail/AssistantDetailPage.kt",
+      "accessCount": 22,
+      "lastAccessed": 1777612471067,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ConversationList.kt",
+      "accessCount": 17,
+      "lastAccessed": 1777612050320,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/main/MainScreen.kt",
+      "accessCount": 13,
+      "lastAccessed": 1777613006043,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/assistant/AssistantPage.kt",
+      "accessCount": 11,
+      "lastAccessed": 1777609771382,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/ai/GroupChatSettingsDialog.kt",
+      "accessCount": 11,
+      "lastAccessed": 1777623844302,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/setting/SettingPage.kt",
+      "accessCount": 10,
+      "lastAccessed": 1777687573465,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/utils/ChatUtil.kt",
+      "accessCount": 9,
+      "lastAccessed": 1777601291642,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatDrawer.kt",
+      "accessCount": 9,
+      "lastAccessed": 1777602578991,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatVM.kt",
+      "accessCount": 7,
+      "lastAccessed": 1777610367993,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/service/ChatService.kt",
+      "accessCount": 7,
+      "lastAccessed": 1777645574318,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/di/ViewModelModule.kt",
+      "accessCount": 6,
+      "lastAccessed": 1777609819120,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/data/model/Assistant.kt",
+      "accessCount": 6,
+      "lastAccessed": 1777626234929,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/voice/VoiceInputButton.kt",
+      "accessCount": 5,
+      "lastAccessed": 1777623385457,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/context/NavContext.kt",
+      "accessCount": 5,
+      "lastAccessed": 1777687609487,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatDrawerVM.kt",
+      "accessCount": 4,
+      "lastAccessed": 1777565049319,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/assistant/detail/AssistantDetailVM.kt",
+      "accessCount": 4,
+      "lastAccessed": 1777609814612,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/data/model/GroupChat.kt",
+      "accessCount": 4,
+      "lastAccessed": 1777610348919,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/ai/CreateGroupChatDialog.kt",
+      "accessCount": 3,
+      "lastAccessed": 1777608192298,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/utils/AudioRecorder.kt",
+      "accessCount": 3,
+      "lastAccessed": 1777623365015,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatList.kt",
+      "accessCount": 3,
+      "lastAccessed": 1777953995226,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/ai/ModelList.kt",
+      "accessCount": 2,
+      "lastAccessed": 1777565328939,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ConversationListVM.kt",
+      "accessCount": 2,
+      "lastAccessed": 1777570054388,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/hooks/Settings.kt",
+      "accessCount": 2,
+      "lastAccessed": 1777609581990,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/assistant/AssistantVM.kt",
+      "accessCount": 2,
+      "lastAccessed": 1777609780923,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/ui/UIAvatar.kt",
+      "accessCount": 2,
+      "lastAccessed": 1777612777893,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/RikkaHubApp.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777563159137,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/Background.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777563171560,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/ai/AssistantPicker.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777563171614,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/hooks/ChatInputState.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777563176948,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/ui/Greeting.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777563179326,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/context/LocalSettings.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777565305065,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/components/ai/SearchPicker.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777565328950,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/data/model/Avatar.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777565399826,
+      "type": "file"
+    },
+    {
+      "path": "app/src/test/java/me/rerere/rikkahub/ShareSheetTest.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777569406460,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/data/repository/ConversationRepository.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777601307494,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/chat/Export.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777602579058,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/favorite/FavoritePage.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777602582807,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/pages/history/HistoryPage.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777602582932,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/data/ai/groupchat/GroupChatManager.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777608230571,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/data/model/Conversation.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777610348973,
+      "type": "file"
+    },
+    {
+      "path": "app/src/main/java/me/rerere/rikkahub/ui/hooks/TTS.kt",
+      "accessCount": 1,
+      "lastAccessed": 1777613708966,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

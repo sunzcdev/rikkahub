@@ -3,11 +3,19 @@ package me.rerere.rikkahub.ui.pages.main
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,22 +31,27 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
+import me.rerere.hugeicons.stroke.Notification03
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.rikkahub.R
@@ -47,6 +60,7 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.repository.ConversationRepository
+import me.rerere.rikkahub.jiji.JijiNotificationManager
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.hooks.rememberUserSettingsState
 import me.rerere.rikkahub.ui.pages.chat.ConversationList
@@ -145,6 +159,33 @@ fun ChatListTab(modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .padding(padding),
         ) {
+            // 唧唧未读提示
+            val jijiNotificationManager: JijiNotificationManager = koinInject()
+            val jijiUnreadCount = remember { mutableIntStateOf(jijiNotificationManager.getUnreadCount()) }
+            val jijiLastMessage = remember { mutableStateOf(jijiNotificationManager.getLastMessagePreview() ?: "") }
+
+            LaunchedEffect(Unit) {
+                while (isActive) {
+                    jijiUnreadCount.intValue = jijiNotificationManager.getUnreadCount()
+                    jijiLastMessage.value = jijiNotificationManager.getLastMessagePreview() ?: ""
+                    kotlinx.coroutines.delay(2000)
+                }
+            }
+
+            if (jijiUnreadCount.intValue > 0) {
+                JijiUnreadRow(
+                    unreadCount = jijiUnreadCount.intValue,
+                    lastMessage = jijiLastMessage.value,
+                    onClick = {
+                        jijiNotificationManager.clearUnread()
+                        val convId = jijiNotificationManager.getConversationId()
+                        if (convId != null) {
+                            navigateToChatPage(navController, Uuid.parse(convId))
+                        }
+                    },
+                )
+            }
+
             ConversationList(
                 current = null,
                 conversations = conversations,
@@ -233,5 +274,66 @@ fun ChatListTab(modifier: Modifier = Modifier) {
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun JijiUnreadRow(
+    unreadCount: Int,
+    lastMessage: String,
+    onClick: () -> Unit,
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = HugeIcons.Notification03,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp),
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "唧唧",
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ) {
+                        Text(
+                            text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                }
+                if (lastMessage.isNotBlank()) {
+                    Text(
+                        text = lastMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
     }
 }
