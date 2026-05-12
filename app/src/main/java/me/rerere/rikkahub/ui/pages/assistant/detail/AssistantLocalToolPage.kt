@@ -186,6 +186,21 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+
+            item(
+                headlineContent = {
+                    Text(stringResource(R.string.vibrate_title))
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.vibrate_desc))
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.Vibrate),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.Vibrate, it) }
+                    )
+                }
+            )
         }
     }
 }

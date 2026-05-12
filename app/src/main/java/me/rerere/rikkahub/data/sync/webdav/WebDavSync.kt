@@ -6,6 +6,7 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.files.SkillPaths
 import me.rerere.rikkahub.data.datastore.Settings
@@ -30,6 +31,7 @@ class WebDavSync(
     private val json: Json,
     private val context: Context,
     private val httpClient: HttpClient,
+    private val database: AppDatabase,
 ) {
     private fun getClient(config: WebDavConfig): WebDavClient {
         return WebDavClient(config, httpClient)
@@ -203,6 +205,12 @@ class WebDavSync(
 
     private suspend fun restoreFromBackupFile(backupFile: File, config: WebDavConfig) = withContext(Dispatchers.IO) {
         Logging.i(TAG, "restoreFromBackupFile: Starting restore from ${backupFile.absolutePath}")
+
+        // Close Room database BEFORE restoring files so it picks up the new database
+        if (config.items.contains(WebDavConfig.BackupItem.DATABASE)) {
+            Logging.i(TAG, "restoreFromBackupFile: Closing Room database connection")
+            database.close()
+        }
 
         ZipInputStream(FileInputStream(backupFile)).use { zipIn ->
             var entry: ZipEntry?

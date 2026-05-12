@@ -11,6 +11,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -57,6 +58,10 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("weather")
     data object Weather : LocalToolOption()
+
+    @Serializable
+    @SerialName("vibrate")
+    data object Vibrate : LocalToolOption()
 }
 
 class LocalTools(
@@ -65,6 +70,8 @@ class LocalTools(
     private val getHardwareKeys: () -> List<HardwareKeyConfig>,
     private val perceptionStore: PerceptionStore? = null,
     private val weatherFetcher: WeatherFetcher = WeatherFetcher(),
+    private val getAmapApiKey: () -> String?,
+    private val vibrationManager: VibrationManager,
 ) {
     val phoneBridge by lazy { PhoneBridge(context, eventBus, getHardwareKeys) }
     val weatherTool by lazy { WeatherTool(weatherFetcher, getHardwareKeys) }
@@ -324,6 +331,94 @@ class LocalTools(
         return sdf.format(java.util.Date(ms))
     }
 
+    val vibrateTool by lazy {
+        Tool(
+            name = "vibrate",
+            description = """Vibrate the device with precise timing.
+
+mode=one_shot (default): {duration_ms: int(1-10000, default 500), amplitude?: int(0-255)}
+mode=waveform: {timings: [off_ms, on_ms, off_ms, on_ms, ...], amplitudes?: int[]}
+
+Cancel ongoing vibration with vibrate_cancel.""",
+            parameters = {
+                InputSchema.Obj(
+                    properties = buildJsonObject {
+                        put("mode", buildJsonObject {
+                            put("type", "string")
+                            put("enum", buildJsonArray {
+                                add("one_shot")
+                                add("waveform")
+                            })
+                            put("description", "Vibration mode (default: one_shot)")
+                        })
+                        put("duration_ms", buildJsonObject {
+                            put("type", "integer")
+                            put("description", "Duration in ms for one_shot mode (default: 500)")
+                        })
+                        put("amplitude", buildJsonObject {
+                            put("type", "integer")
+                            put("description", "0-255, optional")
+                        })
+                        put("timings", buildJsonObject {
+                            put("type", "array")
+                            put("items", buildJsonObject { put("type", "integer") })
+                            put("description", "Waveform pattern [off,on,off,on,...]")
+                        })
+                        put("amplitudes", buildJsonObject {
+                            put("type", "array")
+                            put("items", buildJsonObject { put("type", "integer") })
+                            put("description", "Amplitude for ON segments only (1-255). OFF segments are silent. Same length as timings.")
+                        })
+                    }
+                )
+            },
+            execute = {
+                val jsonObj = it.jsonObject
+                val mode = jsonObj["mode"]?.jsonPrimitive?.contentOrNull ?: "one_shot"
+
+                when (mode) {
+                    "one_shot" -> {
+                        val durationMs = jsonObj["duration_ms"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 500L
+                        val amplitude = jsonObj["amplitude"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+                        val result = vibrationManager.oneShot(durationMs, amplitude)
+                        listOf(UIMessagePart.Text(result.toJson()))
+                    }
+
+                    "waveform" -> {
+                        val timingsArray = jsonObj["timings"]?.jsonArray?.map {
+                            it.jsonPrimitive.contentOrNull?.toLongOrNull()
+                                ?: error("invalid timing value in timings array")
+                        }?.toLongArray()
+                            ?: error("timings is required for waveform mode")
+                        val amplitudesArray = jsonObj["amplitudes"]?.jsonArray?.map {
+                            it.jsonPrimitive.contentOrNull?.toIntOrNull()
+                                ?: error("invalid amplitude value in amplitudes array")
+                        }?.toIntArray()
+                        val result = vibrationManager.waveform(timingsArray, amplitudesArray)
+                        listOf(UIMessagePart.Text(result.toJson()))
+                    }
+
+                    else -> listOf(UIMessagePart.Text(
+                        """{"success":false,"error":"Unknown mode: $mode"}"""
+                    ))
+                }
+            }
+        )
+    }
+
+    val vibrateCancelTool by lazy {
+        Tool(
+            name = "vibrate_cancel",
+            description = "Stop all ongoing vibration immediately. No parameters needed.",
+            parameters = {
+                InputSchema.Obj(properties = buildJsonObject { })
+            },
+            execute = {
+                listOf(UIMessagePart.Text(vibrationManager.cancel().toJson()))
+            }
+        )
+    }
+
     fun getTools(options: List<LocalToolOption>): List<Tool> {
         val tools = mutableListOf<Tool>()
         if (options.contains(LocalToolOption.JavascriptEngine)) {
@@ -350,6 +445,10 @@ class LocalTools(
         // 感知数据查询工具总是可用
         if (perceptionStore != null) {
             tools.add(queryPerceptionTool)
+        }
+        if (options.contains(LocalToolOption.Vibrate)) {
+            tools.add(vibrateTool)
+            tools.add(vibrateCancelTool)
         }
         return tools
     }

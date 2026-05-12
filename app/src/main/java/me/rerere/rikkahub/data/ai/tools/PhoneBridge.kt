@@ -7,9 +7,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.provider.ContactsContract
 import me.rerere.common.android.Logging
 import androidx.core.content.ContextCompat
@@ -43,27 +40,6 @@ class PhoneBridge(
     private val eventBus: AppEventBus,
     private val getHardwareKeys: () -> List<HardwareKeyConfig>,
 ) {
-    val vibrateTool by lazy {
-        Tool(
-            name = "vibrate_device",
-            description = "Trigger phone vibration. Specify duration in milliseconds (default 500ms).",
-            parameters = {
-                InputSchema.Obj(
-                    properties = buildJsonObject {
-                        put("duration_ms", buildJsonObject {
-                            put("type", "integer")
-                            put("description", "Vibration duration in milliseconds (default 500)")
-                        })
-                    }
-                )
-            },
-            execute = {
-                val ms = it.jsonObject["duration_ms"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 500L
-                handleVibrate(ms)
-            }
-        )
-    }
-
     val callTool by lazy {
         Tool(
             name = "make_phone_call",
@@ -276,7 +252,6 @@ class PhoneBridge(
     }
 
     fun getAllTools(): List<Tool> = listOf(
-        vibrateTool,
         callTool,
         locationTool,
         photoTool,
@@ -287,31 +262,6 @@ class PhoneBridge(
         callContactTool,
         amapLinkTool
     )
-
-    private fun handleVibrate(ms: Long): List<UIMessagePart> {
-        Logging.d(TAG, "handleVibrate: Vibrating for $ms ms")
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(ms)
-        }
-
-        return listOf(UIMessagePart.Text(
-            buildJsonObject {
-                put("success", true)
-                put("duration_ms", ms)
-            }.toString()
-        ))
-    }
 
     private fun handleMakeCall(number: String): List<UIMessagePart> {
         Logging.d(TAG, "handleMakeCall: Opening dialer for number: $number")

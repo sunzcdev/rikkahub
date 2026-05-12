@@ -1052,6 +1052,8 @@
   <string name="phone_bridge_desc">Allows AI to access hardware features like GPS, Camera, Vibration, etc.</string>
   <string name="weather_tool_title">Weather</string>
   <string name="weather_tool_desc">Allows AI to check current weather conditions for any city</string>
+  <string name="vibrate_title">Vibration</string>
+  <string name="vibrate_desc">Allows AI to vibrate the device with precise timing patterns</string>
   <string name="amap_api_key">Amap API Key</string>
   <string name="amap_api_key_desc">API Key for Amap (Gaode Maps) location services</string>
   <string name="open_weather_api_key">OpenWeather API Key</string>

@@ -6,6 +6,7 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.files.SkillPaths
 import me.rerere.rikkahub.data.datastore.Settings
@@ -31,6 +32,7 @@ class S3Sync(
     private val json: Json,
     private val context: Context,
     private val httpClient: HttpClient,
+    private val database: AppDatabase,
 ) {
     private fun getS3Client(config: S3Config): S3Client {
         return S3Client(config, httpClient)
@@ -180,6 +182,12 @@ class S3Sync(
 
     private suspend fun restoreFromBackupFile(backupFile: File, config: S3Config) = withContext(Dispatchers.IO) {
         Logging.i(TAG, "restoreFromBackupFile: Starting restore from ${backupFile.absolutePath}")
+
+        // Close Room database BEFORE restoring files so it picks up the new database
+        if (config.items.contains(S3Config.BackupItem.DATABASE)) {
+            Logging.i(TAG, "restoreFromBackupFile: Closing Room database connection")
+            database.close()
+        }
 
         ZipInputStream(FileInputStream(backupFile)).use { zipIn ->
             var entry: ZipEntry?

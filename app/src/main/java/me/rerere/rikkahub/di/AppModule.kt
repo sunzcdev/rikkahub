@@ -13,6 +13,9 @@ import me.rerere.rikkahub.data.ai.groupchat.AutoDiscussManager
 import me.rerere.rikkahub.data.ai.groupchat.GroupChatManager
 import me.rerere.rikkahub.data.ai.tools.LocalTools
 import me.rerere.rikkahub.data.ai.tools.WeatherFetcher
+import me.rerere.rikkahub.data.ai.tools.VibrationManager
+import me.rerere.rikkahub.data.model.HardwareKeyConfig
+import me.rerere.rikkahub.data.model.findHardwareKey
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.event.AppEventBus
 import me.rerere.rikkahub.service.ChatService
@@ -38,6 +41,10 @@ val appModule = module {
     }
 
     single {
+        VibrationManager(get())
+    }
+
+    single {
         val settingsStore = get<SettingsStore>()
         LocalTools(
             context = get(),
@@ -45,6 +52,8 @@ val appModule = module {
             getHardwareKeys = { settingsStore.settingsFlow.value.hardwareKeys },
             perceptionStore = get(),
             weatherFetcher = get(),
+            getAmapApiKey = { settingsStore.settingsFlow.value.hardwareKeys.findHardwareKey<HardwareKeyConfig.Amap>()?.apiKey },
+            vibrationManager = get(),
         )
     }
 
