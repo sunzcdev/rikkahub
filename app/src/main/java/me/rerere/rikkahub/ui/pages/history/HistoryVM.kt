@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.ui.pages.history
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +29,7 @@ class HistoryVM(
     val conversations = assistant.flatMapLatest { assistant ->
         conversationRepo.getConversationsOfAssistant(assistant?.id ?: Uuid.random())
     }.catch {
-        Log.e(TAG, "Error: ${it.message}")
+        Logging.e(TAG, "Error: ${it.message}")
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun deleteConversation(conversation: Conversation) {

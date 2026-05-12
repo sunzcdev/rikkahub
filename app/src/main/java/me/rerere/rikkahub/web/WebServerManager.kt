@@ -1,7 +1,7 @@
 package me.rerere.rikkahub.web
 
 import android.content.Context
-import android.util.Log
+import me.rerere.common.android.Logging
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import kotlinx.coroutines.CoroutineScope
@@ -54,7 +54,7 @@ class WebServerManager(
         localhostOnly: Boolean = false
     ) {
         if (server != null) {
-            Log.w(TAG, "Server already running")
+            Logging.w(TAG, "Server already running")
             return
         }
 
@@ -68,9 +68,9 @@ class WebServerManager(
             )
             try {
                 _state.value = _state.value.copy(isLoading = true)
-                Log.i(TAG, "Starting web server on $host:$port")
+                Logging.i(TAG, "Starting web server on $host:$port")
                 if (!isPortAvailable(port)) {
-                    Log.w(TAG, "Port $port is already in use")
+                    Logging.w(TAG, "Port $port is already in use")
                     _state.value = baseState.copy(error = "Port $port is already in use")
                     return@launch
                 }
@@ -94,12 +94,12 @@ class WebServerManager(
                             }
                         )
                     }.onFailure {
-                        Log.w(TAG, "NSD register failed", it)
+                        Logging.w(TAG, "NSD register failed", it)
                     }
                 }
-                Log.i(TAG, "Web server started successfully on $host:$port")
+                Logging.i(TAG, "Web server started successfully on $host:$port")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to start web server", e)
+                Logging.e(TAG, "Failed to start web server", e)
                 _state.value = baseState.copy(error = e.message)
             }
         }
@@ -110,18 +110,18 @@ class WebServerManager(
             _state.value.copy(isRunning = false, isLoading = true, hostname = null, address = null, error = null)
         appScope.launch {
             try {
-                Log.i(TAG, "Stopping web server")
+                Logging.i(TAG, "Stopping web server")
                 server?.stop(1000, 2000)
                 server = null
                 runCatching {
                     nsdRegistrar.unregister()
                 }.onFailure {
-                    Log.w(TAG, "NSD unregister failed", it)
+                    Logging.w(TAG, "NSD unregister failed", it)
                 }
                 _state.value = _state.value.copy(isLoading = false)
-                Log.i(TAG, "Web server stopped")
+                Logging.i(TAG, "Web server stopped")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to stop web server", e)
+                Logging.e(TAG, "Failed to stop web server", e)
                 _state.value = _state.value.copy(isLoading = false, error = e.message)
             }
         }

@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
@@ -16,8 +17,11 @@ import kotlinx.serialization.json.put
 import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.rikkahub.data.model.HardwareKeyConfig
+import me.rerere.rikkahub.data.perception.PerceptionStore
 import me.rerere.rikkahub.data.event.AppEvent
 import me.rerere.rikkahub.data.event.AppEventBus
+import me.rerere.rikkahub.data.model.findHardwareKey
 import me.rerere.rikkahub.utils.readClipboardText
 import me.rerere.rikkahub.utils.writeClipboardText
 import java.time.ZonedDateTime
@@ -49,14 +53,23 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("phone_bridge")
     data object PhoneBridge : LocalToolOption()
+
+    @Serializable
+    @SerialName("weather")
+    data object Weather : LocalToolOption()
 }
 
 class LocalTools(
     private val context: Context,
     private val eventBus: AppEventBus,
-    private val getAmapApiKey: () -> String?
+    private val getHardwareKeys: () -> List<HardwareKeyConfig>,
+    private val perceptionStore: PerceptionStore? = null,
+    private val weatherFetcher: WeatherFetcher = WeatherFetcher(),
 ) {
-    val phoneBridge by lazy { PhoneBridge(context, eventBus, getAmapApiKey) }
+    val phoneBridge by lazy { PhoneBridge(context, eventBus, getHardwareKeys) }
+    val weatherTool by lazy { WeatherTool(weatherFetcher, getHardwareKeys) }
+
+    val queryPerceptionTool by lazy { createQueryPerceptionTool() }
 
     val javascriptTool by lazy {
         Tool(
@@ -65,10 +78,7 @@ class LocalTools(
                 Execute JavaScript code using QuickJS engine (ES2020).
                 The result is the value of the last expression in the code.
                 For calculations with decimals, use toFixed() to control precision.
-                Console output (log/info/warn/error) is captured and returned in 'logs' field.
-                No DOM or Node.js APIs available.
-                Example: '1 + 2' returns 3; 'const x = 5; x * 2' returns 10.
-            """.trimIndent().replace("\n", " "),
+            """.trimIndent(),
             parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {
@@ -80,238 +90,238 @@ class LocalTools(
                     required = listOf("code")
                 )
             },
-            execute = {
-                val logs = arrayListOf<String>()
-                val context = QuickJSContext.create()
-                context.setConsole(object : QuickJSContext.Console {
-                    override fun log(info: String?) {
-                        logs.add("[LOG] $info")
-                    }
-
-                    override fun info(info: String?) {
-                        logs.add("[INFO] $info")
-                    }
-
-                    override fun warn(info: String?) {
-                        logs.add("[WARN] $info")
-                    }
-
-                    override fun error(info: String?) {
-                        logs.add("[ERROR] $info")
-                    }
-                })
-                val code = it.jsonObject["code"]?.jsonPrimitive?.contentOrNull
-                val result = context.evaluate(code)
-                val payload = buildJsonObject {
-                    if (logs.isNotEmpty()) {
-                        put("logs", JsonPrimitive(logs.joinToString("\n")))
-                    }
-                    put(
-                        key = "result",
-                        element = when (result) {
-                            null -> JsonNull
-                            is QuickJSObject -> JsonPrimitive(result.stringify())
-                            else -> JsonPrimitive(result.toString())
-                        }
-                    )
+            execute = { args ->
+                val code = args.jsonObject["code"]?.jsonPrimitive?.contentOrNull ?: ""
+                if (code.isBlank()) return@Tool listOf(UIMessagePart.Text(""))
+                try {
+                    val quickjs = QuickJSContext.create()
+                    val result = quickjs.evaluate(code)
+                    listOf(UIMessagePart.Text(result.toString()))
+                } catch (e: Exception) {
+                    listOf(UIMessagePart.Text(e.message ?: "JavaScript execution failed"))
                 }
-                listOf(UIMessagePart.Text(payload.toString()))
             }
         )
     }
 
-    val timeTool by lazy {
+    val timeTool: Tool by lazy {
         Tool(
-            name = "get_time_info",
-            description = """
-                Get the current local date and time info from the device.
-                Returns year/month/day, weekday, ISO date/time strings, timezone, and timestamp.
-            """.trimIndent().replace("\n", " "),
-            parameters = {
-                InputSchema.Obj(
-                    properties = buildJsonObject { }
-                )
-            },
+            name = "time_info",
+            description = "Get current time info, you can use this to get current date and time.",
             execute = {
                 val now = ZonedDateTime.now()
-                val date = now.toLocalDate()
-                val time = now.toLocalTime().withNano(0)
-                val weekday = now.dayOfWeek
-                val payload = buildJsonObject {
-                    put("year", date.year)
-                    put("month", date.monthValue)
-                    put("day", date.dayOfMonth)
-                    put("weekday", weekday.getDisplayName(TextStyle.FULL, Locale.getDefault()))
-                    put("weekday_en", weekday.getDisplayName(TextStyle.FULL, Locale.ENGLISH))
-                    put("weekday_index", weekday.value)
-                    put("date", date.toString())
-                    put("time", time.toString())
-                    put("datetime", now.withNano(0).toString())
-                    put("timezone", now.zone.id)
-                    put("utc_offset", now.offset.id)
-                    put("timestamp_ms", now.toInstant().toEpochMilli())
-                }
-                listOf(UIMessagePart.Text(payload.toString()))
+                listOf(UIMessagePart.Text(
+                    buildJsonObject {
+                        put("date", now.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE))
+                        put("time", now.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")))
+                        put("timezone", now.zone.id)
+                        put("day_of_week", now.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.CHINESE))
+                        put("unix_timestamp", now.toInstant().toEpochMilli())
+                    }.toString()
+                ))
             }
         )
     }
 
-    val clipboardTool by lazy {
+    val clipboardTool: Tool by lazy {
         Tool(
-            name = "clipboard_tool",
-            description = """
-                Read or write plain text from the device clipboard.
-                Use action: read or write. For write, provide text.
-                Do NOT write to the clipboard unless the user has explicitly requested it.
-            """.trimIndent().replace("\n", " "),
+            name = "clipboard",
+            description = "Read or write clipboard content.",
             parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {
                         put("action", buildJsonObject {
                             put("type", "string")
-                            put(
-                                "enum",
-                                kotlinx.serialization.json.buildJsonArray {
-                                    add("read")
-                                    add("write")
-                                }
-                            )
-                            put("description", "Operation to perform: read or write")
+                            put("description", "Action to perform: 'read' or 'write'")
+                            put("enum", buildJsonArray {
+                                add(JsonPrimitive("read"))
+                                add(JsonPrimitive("write"))
+                            })
                         })
-                        put("text", buildJsonObject {
+                        put("content", buildJsonObject {
                             put("type", "string")
-                            put("description", "Text to write to the clipboard (required for write)")
+                            put("description", "Content to write (only used when action is 'write')")
                         })
                     },
                     required = listOf("action")
                 )
             },
-            execute = {
-                val params = it.jsonObject
-                val action = params["action"]?.jsonPrimitive?.contentOrNull ?: error("action is required")
+            execute = { args ->
+                val params = args.jsonObject
+                val action = params["action"]?.jsonPrimitive?.contentOrNull ?: ""
                 when (action) {
                     "read" -> {
-                        val payload = buildJsonObject {
-                            put("text", context.readClipboardText())
-                        }
-                        listOf(UIMessagePart.Text(payload.toString()))
+                        val content = context.readClipboardText()
+                        listOf(UIMessagePart.Text(content ?: ""))
                     }
-
                     "write" -> {
-                        val text = params["text"]?.jsonPrimitive?.contentOrNull ?: error("text is required")
-                        context.writeClipboardText(text)
-                        val payload = buildJsonObject {
-                            put("success", true)
-                            put("text", text)
-                        }
-                        listOf(UIMessagePart.Text(payload.toString()))
+                        val content = params["content"]?.jsonPrimitive?.contentOrNull ?: ""
+                        context.writeClipboardText(content)
+                        listOf(UIMessagePart.Text("Clipboard updated."))
                     }
-
-                    else -> error("unknown action: $action, must be one of [read, write]")
+                    else -> listOf(UIMessagePart.Text("Unknown action."))
                 }
             }
         )
     }
 
-    val ttsTool by lazy {
+    val ttsTool: Tool by lazy {
         Tool(
             name = "text_to_speech",
-            description = """
-                Speak text aloud to the user using the device's text-to-speech engine.
-                Use this when the user asks you to read something aloud, or when audio output is appropriate.
-                The tool returns immediately; audio plays in the background on the device.
-                Provide natural, readable text without markdown formatting.
-            """.trimIndent().replace("\n", " "),
+            description = "Convert text to speech and play it. Only use this when the user explicitly asks you to speak something out loud.",
             parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {
                         put("text", buildJsonObject {
                             put("type", "string")
-                            put("description", "The text to speak aloud")
+                            put("description", "The text to convert to speech")
                         })
                     },
                     required = listOf("text")
                 )
             },
-            execute = {
-                val text = it.jsonObject["text"]?.jsonPrimitive?.contentOrNull
-                    ?: error("text is required")
+            execute = { args ->
+                val text = args.jsonObject["text"]?.jsonPrimitive?.contentOrNull ?: ""
                 eventBus.emit(AppEvent.Speak(text))
-                val payload = buildJsonObject {
-                    put("success", true)
-                }
-                listOf(UIMessagePart.Text(payload.toString()))
+                listOf(UIMessagePart.Text("I'm speaking..."))
             }
         )
     }
 
-    val askUserTool by lazy {
+    val askUserTool: Tool by lazy {
         Tool(
-            name = "ask_user",
-            description = """
-                Ask the user one or more questions when you need clarification, additional information, or confirmation.
-                Each question can optionally provide a list of suggested options for the user to choose from.
-                The user may select an option or provide their own free-text answer for each question.
-                The answers will be returned as a JSON object mapping question IDs to the user's responses.
-            """.trimIndent().replace("\n", " "),
+            name = "continue_conversation",
+            description = "Ask the user a question to continue the conversation. Use this when you need to clarify something or need more information from the user.",
             parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {
-                        put("questions", buildJsonObject {
-                            put("type", "array")
-                            put("description", "List of questions to ask the user")
-                            put("items", buildJsonObject {
-                                put("type", "object")
-                                put("properties", buildJsonObject {
-                                    put("id", buildJsonObject {
-                                        put("type", "string")
-                                        put("description", "Unique identifier for this question")
-                                    })
-                                    put("question", buildJsonObject {
-                                        put("type", "string")
-                                        put("description", "The question text to display to the user")
-                                    })
-                                    put("options", buildJsonObject {
-                                        put("type", "array")
-                                        put(
-                                            "description",
-                                            "Optional list of suggested options for the user to choose from"
-                                        )
-                                        put("items", buildJsonObject {
-                                            put("type", "string")
-                                        })
-                                    })
-                                    put("selection_type", buildJsonObject {
-                                        put("type", "string")
-                                        put(
-                                            "enum",
-                                            kotlinx.serialization.json.buildJsonArray {
-                                                add("text")
-                                                add("single")
-                                                add("multi")
-                                            }
-                                        )
-                                        put(
-                                            "description",
-                                            "Answer type: text (free text input, default), single (select exactly one option), multi (select one or more options)"
-                                        )
-                                    })
-                                })
-                                put("required", kotlinx.serialization.json.buildJsonArray {
-                                    add("id")
-                                    add("question")
-                                })
-                            })
+                        put("question", buildJsonObject {
+                            put("type", "string")
+                            put("description", "The question to ask the user")
                         })
                     },
-                    required = listOf("questions")
+                    required = listOf("question")
                 )
             },
-            needsApproval = true,
-            execute = {
-                error("ask_user tool should be handled by HITL flow")
+            execute = { args ->
+                val question = args.jsonObject["question"]?.jsonPrimitive?.contentOrNull ?: ""
+                listOf(UIMessagePart.Text("**${question}**"))
             }
         )
+    }
+
+    private fun createQueryPerceptionTool(): Tool {
+        return Tool(
+            name = "query_perception",
+            description = "Query historical perception data (location history and weather history) collected by Jiji. Use this when the user asks about past locations, weather changes, or wants to recall where they were at a specific time.",
+            parameters = {
+                InputSchema.Obj(
+                    properties = buildJsonObject {
+                        put("type", buildJsonObject {
+                            put("type", "string")
+                            put("description", "Type of data to query: 'location' or 'weather'")
+                            put("enum", buildJsonArray {
+                                add(JsonPrimitive("location"))
+                                add(JsonPrimitive("weather"))
+                            })
+                        })
+                        put("since", buildJsonObject {
+                            put("type", "string")
+                            put("description", "Optional start time in ISO format (e.g. '2024-01-15T10:00'). Defaults to 24 hours ago.")
+                        })
+                        put("until", buildJsonObject {
+                            put("type", "string")
+                            put("description", "Optional end time in ISO format. Defaults to now.")
+                        })
+                    },
+                    required = listOf("type")
+                )
+            },
+            execute = { args ->
+                val perceptionMemory = perceptionStore?.getMemory() ?: return@Tool listOf(
+                    UIMessagePart.Text(buildJsonObject {
+                        put("error", true)
+                        put("message", "感知数据不可用")
+                    }.toString())
+                )
+
+                val params = args.jsonObject
+                val type = params["type"]?.jsonPrimitive?.contentOrNull ?: return@Tool listOf(
+                    UIMessagePart.Text(buildJsonObject {
+                        put("error", true)
+                        put("message", "Missing type parameter")
+                    }.toString())
+                )
+
+                val now = System.currentTimeMillis()
+                val defaultSince = now - 24 * 60 * 60 * 1000L
+                val sinceMs = params["since"]?.jsonPrimitive?.contentOrNull?.let { parseTimestamp(it) } ?: defaultSince
+                val untilMs = params["until"]?.jsonPrimitive?.contentOrNull?.let { parseTimestamp(it) } ?: now
+
+                when (type) {
+                    "location" -> {
+                        val entries = perceptionMemory.locationHistory.filter {
+                            it.timestamp in sinceMs..untilMs
+                        }
+                        val summary = if (entries.isEmpty()) {
+                            "该时间段内没有位置记录"
+                        } else {
+                            buildString {
+                                appendLine("位置记录 (${formatTime(sinceMs)} ~ ${formatTime(untilMs)})：")
+                                entries.forEach { loc ->
+                                    appendLine("  - ${formatTime(loc.timestamp)}: ${loc.city} ${loc.district?.let { "- $it" } ?: ""}")
+                                }
+                            }
+                        }
+                        listOf(UIMessagePart.Text(buildJsonObject {
+                            put("type", "location")
+                            put("count", entries.size)
+                            put("summary", summary)
+                        }.toString()))
+                    }
+                    "weather" -> {
+                        val entries = perceptionMemory.weatherHistory.filter {
+                            it.timestamp in sinceMs..untilMs
+                        }
+                        val summary = if (entries.isEmpty()) {
+                            "该时间段内没有天气记录"
+                        } else {
+                            buildString {
+                                appendLine("天气记录 (${formatTime(sinceMs)} ~ ${formatTime(untilMs)})：")
+                                entries.forEach { w ->
+                                    appendLine("  - ${formatTime(w.timestamp)}: ${w.condition} ${w.temperature}°C")
+                                }
+                            }
+                        }
+                        listOf(UIMessagePart.Text(buildJsonObject {
+                            put("type", "weather")
+                            put("count", entries.size)
+                            put("summary", summary)
+                        }.toString()))
+                    }
+                    else -> listOf(UIMessagePart.Text(buildJsonObject {
+                        put("error", true)
+                        put("message", "Unknown type: $type")
+                    }.toString()))
+                }
+            }
+        )
+    }
+
+    private fun parseTimestamp(iso: String): Long {
+        return try {
+            java.time.LocalDateTime.parse(iso)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+        } catch (e: Exception) {
+            System.currentTimeMillis() - 24 * 60 * 60 * 1000L
+        }
+    }
+
+    private fun formatTime(ms: Long): String {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+        return sdf.format(java.util.Date(ms))
     }
 
     fun getTools(options: List<LocalToolOption>): List<Tool> {
@@ -333,6 +343,13 @@ class LocalTools(
         }
         if (options.contains(LocalToolOption.PhoneBridge)) {
             tools.addAll(phoneBridge.getAllTools())
+        }
+        if (options.contains(LocalToolOption.Weather)) {
+            tools.add(weatherTool.tool)
+        }
+        // 感知数据查询工具总是可用
+        if (perceptionStore != null) {
+            tools.add(queryPerceptionTool)
         }
         return tools
     }

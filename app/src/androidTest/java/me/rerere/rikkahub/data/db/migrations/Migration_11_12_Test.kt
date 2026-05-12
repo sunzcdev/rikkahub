@@ -2,7 +2,7 @@ package me.rerere.rikkahub.data.db.migrations
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.room.testing.MigrationTestHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -544,7 +544,7 @@ class Migration_11_12_Test {
         assertEquals("Normal conversation nodes should be cleared", "[]", normalConvNodes)
         normalConvCursor.close()
 
-        Log.i(
+        Logging.i(
             "Migration_11_12_Test",
             "Large conversation migration result: $largeNodesMigrated nodes migrated, nodes field: ${if (largeConvNodes == "[]") "cleared" else "preserved"}"
         )

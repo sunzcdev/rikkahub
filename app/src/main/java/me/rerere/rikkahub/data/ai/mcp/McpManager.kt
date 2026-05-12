@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.data.ai.mcp
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.core.net.toUri
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -87,15 +87,15 @@ class McpManager(
                 .map { settings -> settings.mcpServers }
                 .collect { mcpServerConfigs ->
                     runCatching {
-                        Log.i(TAG, "update configs: $mcpServerConfigs")
+                        Logging.i(TAG, "update configs: $mcpServerConfigs")
                         val newConfigs = mcpServerConfigs.filter { it.commonOptions.enable }
                         val currentConfigs = clients.keys.toList()
                         val (toAdd, toRemove) = currentConfigs.checkDifferent(
                             other = newConfigs,
                             eq = { a, b -> a.id == b.id }
                         )
-                        Log.i(TAG, "to_add: $toAdd")
-                        Log.i(TAG, "to_remove: $toRemove")
+                        Logging.i(TAG, "to_add: $toAdd")
+                        Logging.i(TAG, "to_remove: $toRemove")
                         toAdd.forEach { cfg ->
                             appScope.launch {
                                 runCatching { addClient(cfg) }
@@ -137,7 +137,7 @@ class McpManager(
             clients.entries.find { it.key.commonOptions.tools.any { it.name == toolName } }?.value
         if (client == null) return listOf(UIMessagePart.Text("Failed to execute tool, because no such mcp client for the tool"))
         val config = clients.entries.first { it.value == client }.key
-        Log.i(TAG, "callTool: $toolName / $args")
+        Logging.i(TAG, "callTool: $toolName / $args")
 
         if (client.transport == null) client.connect(getTransport(config))
         val result = client.callTool(
@@ -168,7 +168,7 @@ class McpManager(
             mimeType = image.mimeType,
         )
         val uri = filesManager.getFile(entity).toUri()
-        Log.i(TAG, "convertImageContentToFilePart: saved mcp image to $uri")
+        Logging.i(TAG, "convertImageContentToFilePart: saved mcp image to $uri")
         return UIMessagePart.Image(url = uri.toString())
     }
 
@@ -217,7 +217,7 @@ class McpManager(
 
         // 注册 transport 回调以支持自动重连
         transport.onClose {
-            Log.i(TAG, "Transport closed for ${config.commonOptions.name}")
+            Logging.i(TAG, "Transport closed for ${config.commonOptions.name}")
             val currentStatus = syncingStatus.value[config.id]
             // 只有在已连接状态下才触发重连，避免正常关闭时重连
             if (currentStatus == McpStatus.Connected) {
@@ -226,7 +226,7 @@ class McpManager(
         }
 
         transport.onError { error ->
-            Log.e(TAG, "Transport error for ${config.commonOptions.name}: ${error.message}")
+            Logging.e(TAG, "Transport error for ${config.commonOptions.name}: ${error.message}")
             val currentStatus = syncingStatus.value[config.id]
             // 只有在已连接状态下才触发重连
             if (currentStatus == McpStatus.Connected) {
@@ -241,7 +241,7 @@ class McpManager(
             sync(config)
             setStatus(config = config, status = McpStatus.Connected)
             reconnectAttempts[config.id] = 0 // 重置重连计数
-            Log.i(TAG, "addClient: connected ${config.commonOptions.name}")
+            Logging.i(TAG, "addClient: connected ${config.commonOptions.name}")
         }.onFailure {
             it.printStackTrace()
             setStatus(config = config, status = McpStatus.Error(it.message ?: it.javaClass.name))
@@ -258,7 +258,7 @@ class McpManager(
             client.connect(getTransport(config))
         }
         val serverTools = client.listTools()?.tools ?: emptyList()
-        Log.i(TAG, "sync: tools: $serverTools")
+        Logging.i(TAG, "sync: tools: $serverTools")
         settingsStore.update { old ->
             old.copy(
                 mcpServers = old.mcpServers.map { serverConfig ->
@@ -334,7 +334,7 @@ class McpManager(
             }
             clients.remove(entry.key)
             syncingStatus.emit(syncingStatus.value.toMutableMap().apply { remove(entry.key.id) })
-            Log.i(TAG, "removeClient: ${entry.key} / ${entry.key.commonOptions.name}")
+            Logging.i(TAG, "removeClient: ${entry.key} / ${entry.key.commonOptions.name}")
         }
         reconnectAttempts.remove(config.id)
     }
@@ -344,7 +344,7 @@ class McpManager(
         val currentAttempt = (reconnectAttempts[configId] ?: 0) + 1
 
         if (currentAttempt > MAX_RECONNECT_ATTEMPTS) {
-            Log.w(TAG, "Max reconnect attempts reached for ${config.commonOptions.name}")
+            Logging.w(TAG, "Max reconnect attempts reached for ${config.commonOptions.name}")
             appScope.launch {
                 setStatus(config, McpStatus.Error("连接断开，已达最大重连次数"))
             }
@@ -358,7 +358,7 @@ class McpManager(
 
         // 计算指数退避延迟
         val delayMs = calculateBackoffDelay(currentAttempt)
-        Log.i(TAG, "Scheduling reconnect for ${config.commonOptions.name}, attempt $currentAttempt/$MAX_RECONNECT_ATTEMPTS, delay ${delayMs}ms")
+        Logging.i(TAG, "Scheduling reconnect for ${config.commonOptions.name}, attempt $currentAttempt/$MAX_RECONNECT_ATTEMPTS, delay ${delayMs}ms")
 
         reconnectJobs[configId] = appScope.launch {
             try {
@@ -370,17 +370,17 @@ class McpManager(
                     .find { it.id == configId && it.commonOptions.enable }
 
                 if (currentConfig == null) {
-                    Log.i(TAG, "Config disabled or removed, cancelling reconnect for ${config.commonOptions.name}")
+                    Logging.i(TAG, "Config disabled or removed, cancelling reconnect for ${config.commonOptions.name}")
                     return@launch
                 }
 
-                Log.i(TAG, "Attempting reconnect for ${config.commonOptions.name}")
+                Logging.i(TAG, "Attempting reconnect for ${config.commonOptions.name}")
                 reconnectClient(currentConfig)
             } catch (e: CancellationException) {
-                Log.i(TAG, "Reconnect cancelled for ${config.commonOptions.name}")
+                Logging.i(TAG, "Reconnect cancelled for ${config.commonOptions.name}")
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Reconnect failed for ${config.commonOptions.name}", e)
+                Logging.e(TAG, "Reconnect failed for ${config.commonOptions.name}", e)
                 // 继续尝试重连
                 scheduleReconnect(config)
             }
@@ -416,7 +416,7 @@ class McpManager(
 
         // 注册回调
         transport.onClose {
-            Log.i(TAG, "Transport closed for ${config.commonOptions.name}")
+            Logging.i(TAG, "Transport closed for ${config.commonOptions.name}")
             val currentStatus = syncingStatus.value[config.id]
             if (currentStatus == McpStatus.Connected) {
                 scheduleReconnect(config)
@@ -424,7 +424,7 @@ class McpManager(
         }
 
         transport.onError { error ->
-            Log.e(TAG, "Transport error for ${config.commonOptions.name}: ${error.message}")
+            Logging.e(TAG, "Transport error for ${config.commonOptions.name}: ${error.message}")
             val currentStatus = syncingStatus.value[config.id]
             if (currentStatus == McpStatus.Connected) {
                 scheduleReconnect(config)
@@ -437,7 +437,7 @@ class McpManager(
         sync(config)
         setStatus(config, McpStatus.Connected)
         reconnectAttempts[config.id] = 0 // 重置重连计数
-        Log.i(TAG, "Reconnected successfully: ${config.commonOptions.name}")
+        Logging.i(TAG, "Reconnected successfully: ${config.commonOptions.name}")
     }
 
     private suspend fun setStatus(config: McpServerConfig, status: McpStatus) {

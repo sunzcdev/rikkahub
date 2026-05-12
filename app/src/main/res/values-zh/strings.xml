@@ -431,7 +431,9 @@
   <string name="notification_web_server_running">Web服务器运行中</string>
   <string name="notification_web_server_starting">正在启动...</string>
   <string name="notification_web_server_stop">停止</string>
-  <string name="notification_channel_tts_playback">TTS播放</string>
+  <string name="notification_channel_tts_playback">TTS 播放</string>
+  <string name="notification_channel_jiji_proactive">唧唧</string>
+  <string name="notification_channel_jiji_proactive_desc">唧唧主动搭话的通知</string>
   <string name="permission_camera">相机</string>
   <string name="permission_camera_desc">需要相机权限以拍摄照片</string>
   <string name="permission_desc_goto_setting">某些权限已被永久拒绝，请前往应用设置手动开启：</string>

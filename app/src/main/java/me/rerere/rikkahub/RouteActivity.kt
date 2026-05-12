@@ -120,6 +120,9 @@ import me.rerere.rikkahub.ui.pages.setting.SettingSearchPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSTTPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTTSPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
+import me.rerere.rikkahub.ui.pages.setting.SettingHardwareBridgePage
+import me.rerere.rikkahub.ui.pages.setting.SettingPerceptionPage
+import me.rerere.rikkahub.ui.pages.setting.SettingPerceptionHistoryPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.stats.StatsPage
 import me.rerere.rikkahub.ui.pages.translator.TranslatorPage
@@ -139,9 +142,28 @@ class RouteActivity : ComponentActivity() {
     private val okHttpClient by inject<OkHttpClient>()
     private val settingsStore by inject<SettingsStore>()
     private var navStack: MutableList<NavKey>? = null
+    /** 唧唧通知点击后待跳转的会话 ID（navStack 就绪后消费） */
+    private var pendingConversationId: String? = null
 
     // Volume key listener registry — last registered handler wins
     internal val volumeKeyListeners = mutableListOf<(isVolumeUp: Boolean) -> Boolean>()
+
+    /**
+     * 从 intent 中解析会话 ID，支持两种方式：
+     * 1. Deep link: rikkahub://chat?conversationId=xxx
+     * 2. Intent extra: "conversationId"
+     */
+    private fun parseDeepLinkOrExtra(intent: Intent?): String? {
+        if (intent == null) return null
+        // Deep link: rikkahub://chat?conversationId=xxx
+        intent.data?.let { uri ->
+            if (uri.scheme == "rikkahub" && uri.host == "chat") {
+                uri.getQueryParameter("conversationId")?.let { return it }
+            }
+        }
+        // Intent extra fallback
+        return intent.getStringExtra("conversationId")
+    }
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -165,6 +187,8 @@ class RouteActivity : ComponentActivity() {
             finish()
             return
         }
+        // 解析深度链接或 intent extra 中的 conversationId
+        pendingConversationId = parseDeepLinkOrExtra(intent)
         setContent {
             RikkahubTheme {
                 setSingletonImageLoaderFactory { context ->
@@ -224,10 +248,11 @@ class RouteActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        // Navigate to the chat screen if a conversation ID is provided
-        intent.getStringExtra("conversationId")?.let { text ->
+        // 解析深度链接或 intent extra 中的 conversationId，立即导航
+        parseDeepLinkOrExtra(intent)?.let { text ->
             navStack?.add(Screen.Chat(text))
-        }    }
+        }
+    }
 
     @Composable
     fun AppRoutes() {
@@ -267,7 +292,14 @@ class RouteActivity : ComponentActivity() {
         val startScreen = Screen.Main
 
         val backStack = rememberNavBackStack(startScreen)
-        SideEffect { this@RouteActivity.navStack = backStack }
+        SideEffect {
+            this@RouteActivity.navStack = backStack
+            // 消费待处理的唧唧深度链接
+            pendingConversationId?.let {
+                backStack.add(Screen.Chat(it))
+                pendingConversationId = null
+            }
+        }
 
         ShareHandler(backStack)
 
@@ -453,6 +485,18 @@ class RouteActivity : ComponentActivity() {
                                 SettingWebPage()
                             }
 
+                            entry<Screen.SettingHardwareBridge> {
+                                SettingHardwareBridgePage()
+                            }
+
+                            entry<Screen.SettingPerception> {
+                                SettingPerceptionPage()
+                            }
+
+                            entry<Screen.SettingPerceptionHistory> {
+                                SettingPerceptionHistoryPage()
+                            }
+
                             entry<Screen.Developer> {
                                 DeveloperPage()
                             }
@@ -491,6 +535,14 @@ class RouteActivity : ComponentActivity() {
 
                             entry<Screen.Stats> {
                                 StatsPage()
+                            }
+
+                            entry<Screen.JijiSettings> {
+                                val configStore: me.rerere.rikkahub.jiji.JijiConfigStore = koinInject()
+                                me.rerere.rikkahub.jiji.JijiSettingsScreen(
+                                    configStore = configStore,
+                                    onBack = { backStack.removeLastOrNull() },
+                                )
                             }
                         }
                     )
@@ -642,6 +694,15 @@ sealed interface Screen : NavKey {
     data object SettingWeb : Screen
 
     @Serializable
+    data object SettingHardwareBridge : Screen
+
+    @Serializable
+    data object SettingPerception : Screen
+
+    @Serializable
+    data object SettingPerceptionHistory : Screen
+
+    @Serializable
     data object Developer : Screen
 
     @Serializable
@@ -670,4 +731,7 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object Stats : Screen
+
+    @Serializable
+    data object JijiSettings : Screen
 }

@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.ui.pages.backup
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -166,7 +166,7 @@ class BackupVM(
             }
         }
 
-        Log.i(TAG, "restoreFromChatBox: import ${importProviders.size} providers: $importProviders")
+        Logging.i(TAG, "restoreFromChatBox: import ${importProviders.size} providers: $importProviders")
 
         updateSettings(
             settings.value.copy(
@@ -182,7 +182,7 @@ class BackupVM(
             throw IllegalArgumentException("No importable providers found in Cherry Studio backup")
         }
 
-        Log.i(TAG, "restoreFromCherryStudio: import ${importProviders.size} providers: $importProviders")
+        Logging.i(TAG, "restoreFromCherryStudio: import ${importProviders.size} providers: $importProviders")
 
         updateSettings(
             settings.value.copy(

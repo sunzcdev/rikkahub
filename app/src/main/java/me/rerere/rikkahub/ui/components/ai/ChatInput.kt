@@ -3,7 +3,7 @@ package me.rerere.rikkahub.ui.components.ai
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -278,7 +278,7 @@ fun ChatInput(
     val imagePickerLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { selectedUris ->
             if (selectedUris.isNotEmpty()) {
-                Log.d("ImagePickButton", "Selected URIs: $selectedUris")
+                Logging.d("ImagePickButton", "Selected URIs: $selectedUris")
                 if (settings.displaySetting.skipCropImage) {
                     state.addImages(filesManager.createChatFilesByContents(selectedUris))
                     dismissExpand()
@@ -292,7 +292,7 @@ fun ChatInput(
                             preCropTempFile = tempFile
                             launchImageCrop(tempFile.toUri())
                         }.onFailure {
-                            Log.e("ImagePickButton", "Failed to copy image to temp, falling back", it)
+                            Logging.e("ImagePickButton", "Failed to copy image to temp, falling back", it)
                             launchImageCrop(selectedUris.first())
                         }
                     } else {
@@ -301,7 +301,7 @@ fun ChatInput(
                     }
                 }
             } else {
-                Log.d("ImagePickButton", "No images selected")
+                Logging.d("ImagePickButton", "No images selected")
             }
         }
 

@@ -622,3 +622,60 @@
 | 17:44 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/richtext/Markdown.kt | added 2 condition(s) | ~182 |
 | 17:44 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/richtext/MarkdownNew.kt | added 2 condition(s) | ~192 |
 | 17:56 | Created .omc/test-plan-amap-url-detection.md | — | ~459 |
+| 18:01 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/richtext/NavigationBlock.kt | added optional chaining | ~11 |
+| 18:01 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/richtext/NavigationBlock.kt | inline fix | ~25 |
+| 18:05 | Session end: 5 writes across 4 files (Markdown.kt, MarkdownNew.kt, test-plan-amap-url-detection.md, NavigationBlock.kt) | 9 reads | ~49355 tok |
+| 18:07 | Session end: 5 writes across 4 files (Markdown.kt, MarkdownNew.kt, test-plan-amap-url-detection.md, NavigationBlock.kt) | 9 reads | ~49364 tok |
+
+## Session: 2026-05-05 18:08
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 18:19 | Edited .omc/test-plan-amap-url-detection.md | 24→24 lines | ~322 |
+| 18:19 | Edited .omc/test-plan-amap-url-detection.md | 14→14 lines | ~175 |
+| 18:32 | UI dump + screenshot from device | device screen | NavBlock renders ("打开高德地图" visible). AI sees URL content. | 800 |
+| 18:32 | Update test plan results | .omc/test-plan-amap-url-detection.md | TC-1~TC-5: PASS; TC-6~TC-8: UNTESTED | 100 |
+| 18:19 | Session end: 2 writes across 1 files (test-plan-amap-url-detection.md) | 3 reads | ~963 tok |
+| 18:24 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTools.kt | added 3 import(s) | ~106 |
+| 18:24 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTools.kt | 1→2 lines | ~20 |
+| 18:24 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTools.kt | 1→4 lines | ~57 |
+| 18:24 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTools.kt | added optional chaining | ~198 |
+| 18:29 | Session end: 6 writes across 2 files (test-plan-amap-url-detection.md, ChatMessageTools.kt) | 7 reads | ~13807 tok |
+
+## Session: 2026-05-05 18:34
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 18:40 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTools.kt | 3→1 lines | ~13 |
+| 18:41 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTools.kt | inline fix | ~10 |
+| 18:42 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTools.kt | removed 15 lines | ~13 |
+| 18:42 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessageTools.kt | 4→1 lines | ~18 |
+| 18:42 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt | added 3 import(s) | ~107 |
+| 18:42 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt | added 1 condition(s) | ~190 |
+| 18:46 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt | 17→19 lines | ~203 |
+| 18:50 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt | added optional chaining | ~178 |
+| 18:51 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt | added 1 condition(s) | ~266 |
+| 18:53 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt | modified if() | ~247 |
+
+## Session: 2026-05-05 18:59
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 18:59 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/richtext/NavigationBlock.kt | 2→2 lines | ~32 |
+| 18:59 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/richtext/NavigationBlock.kt | 2→2 lines | ~29 |
+| 19:00 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt | modified if() | ~150 |
+| 19:00 | Edited app/src/main/java/me/rerere/rikkahub/ui/components/message/ChatMessage.kt | 2→1 lines | ~17 |
+
+## Session: 2026-05-05
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| ~20:00 | Fix parseAmapUrl case sensitivity bug | NavigationBlock.kt | viewMap→viewmap, keywordNavi→keywordnavi | ~30 |
+| ~20:00 | Clean up debug composable from ChatMessage.kt | ChatMessage.kt | Removed DEBUG text, keep clean NavBlock render | ~200 |
+| ~20:00 | Build + install on device | app-arm64-v8a-debug.apk | BUILD SUCCESSFUL, install success | ~500 |
+| ~20:00 | UI dump verify NavBlock renders | device | NavigationBlock visible in chat for route URLs | ~800 |
+| ~20:00 | Commit to dev | 3 source files + test plan | `fix: correct parseAmapUrl case sensitivity...` | ~50 |
+| 19:05 | Session end: 4 writes across 2 files (NavigationBlock.kt, ChatMessage.kt) | 3 reads | ~10404 tok |
+| 19:16 | Edited app/src/main/java/me/rerere/rikkahub/data/ai/tools/PhoneBridge.kt | added 1 condition(s) | ~583 |
+| 19:17 | Edited app/src/main/java/me/rerere/rikkahub/data/ai/tools/PhoneBridge.kt | "androidamap://viewMap?sou" → "androidamap://viewMap?sou" | ~34 |
+| 19:19 | Session end: 6 writes across 3 files (NavigationBlock.kt, ChatMessage.kt, PhoneBridge.kt) | 5 reads | ~25655 tok |

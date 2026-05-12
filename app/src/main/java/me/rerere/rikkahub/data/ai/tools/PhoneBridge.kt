@@ -11,7 +11,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.provider.ContactsContract
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.core.content.ContextCompat
 import com.amap.api.location.AMapLocationClient
 import com.amap.api.location.AMapLocationClientOption
@@ -30,6 +30,9 @@ import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.event.AppEvent
 import me.rerere.rikkahub.data.event.AppEventBus
+import me.rerere.rikkahub.data.model.HardwareKeyConfig
+import me.rerere.rikkahub.data.model.findHardwareKey
+import me.rerere.rikkahub.ui.components.ui.permission.LocationPermissionHelper
 import java.io.File
 import kotlin.coroutines.resume
 
@@ -38,7 +41,7 @@ private const val TAG = "PhoneBridge"
 class PhoneBridge(
     private val context: Context,
     private val eventBus: AppEventBus,
-    private val getAmapApiKey: () -> String?
+    private val getHardwareKeys: () -> List<HardwareKeyConfig>,
 ) {
     val vibrateTool by lazy {
         Tool(
@@ -286,7 +289,7 @@ class PhoneBridge(
     )
 
     private fun handleVibrate(ms: Long): List<UIMessagePart> {
-        Log.d(TAG, "handleVibrate: Vibrating for $ms ms")
+        Logging.d(TAG, "handleVibrate: Vibrating for $ms ms")
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
             vibratorManager.defaultVibrator
@@ -311,7 +314,7 @@ class PhoneBridge(
     }
 
     private fun handleMakeCall(number: String): List<UIMessagePart> {
-        Log.d(TAG, "handleMakeCall: Opening dialer for number: $number")
+        Logging.d(TAG, "handleMakeCall: Opening dialer for number: $number")
         return try {
             val intent = Intent(Intent.ACTION_DIAL).apply {
                 data = Uri.parse("tel:$number")
@@ -327,7 +330,7 @@ class PhoneBridge(
                 }.toString()
             ))
         } catch (e: Exception) {
-            Log.e(TAG, "handleMakeCall: Failed to open dialer", e)
+            Logging.e(TAG, "handleMakeCall: Failed to open dialer", e)
             listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
@@ -339,13 +342,13 @@ class PhoneBridge(
     }
 
     private suspend fun handleGetLocation(): List<UIMessagePart> {
-        Log.d(TAG, "handleGetLocation: Starting location request")
+        Logging.d(TAG, "handleGetLocation: Starting location request")
 
         val permissionCheck = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_FINE_LOCATION
         )
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "handleGetLocation: ACCESS_FINE_LOCATION permission not granted")
+            Logging.w(TAG, "handleGetLocation: ACCESS_FINE_LOCATION permission not granted")
             return listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
@@ -354,10 +357,16 @@ class PhoneBridge(
             ))
         }
 
-        val apiKey = getAmapApiKey()
-        Log.d(TAG, "handleGetLocation: API Key from settings: ${if (apiKey.isNullOrBlank()) "BLANK/NULL" else "first 8 chars: ${apiKey.take(8)}..."}")
+        // 后台定位检查（仅警告，不阻断——用户主动调用 get_location 应正常返回）
+        if (LocationPermissionHelper.needsBackgroundLocationGuide(context)) {
+            Logging.w(TAG, "handleGetLocation: Background location not granted, proactive sensing may be limited")
+        }
+
+        val amapKey = getHardwareKeys().findHardwareKey<HardwareKeyConfig.Amap>()
+        val apiKey = amapKey?.apiKey
+        Logging.d(TAG, "handleGetLocation: Amap key ${if (apiKey.isNullOrBlank()) "NOT configured" else "found: ${apiKey.take(8)}..."}")
         if (apiKey.isNullOrBlank()) {
-            Log.w(TAG, "handleGetLocation: Amap API Key is not configured")
+            Logging.w(TAG, "handleGetLocation: Amap API Key is not configured")
             return listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
@@ -366,13 +375,13 @@ class PhoneBridge(
             ))
         }
 
-        Log.d(TAG, "handleGetLocation: Initializing Amap location client")
+        Logging.d(TAG, "handleGetLocation: Initializing Amap location client")
 
         return try {
             AMapLocationClient.setApiKey(apiKey)
             AMapLocationClient.updatePrivacyShow(context, true, true)
             AMapLocationClient.updatePrivacyAgree(context, true)
-            Log.d(TAG, "handleGetLocation: Privacy agreements updated")
+            Logging.d(TAG, "handleGetLocation: Privacy agreements updated")
 
             val locationResult = suspendCancellableCoroutine { continuation ->
                 val client = AMapLocationClient(context)
@@ -385,28 +394,28 @@ class PhoneBridge(
                 }
                 client.setLocationOption(option)
                 client.setLocationListener { loc ->
-                    Log.d(TAG, "handleGetLocation: Location listener called with loc=${loc?.hashCode()}")
+                    Logging.d(TAG, "handleGetLocation: Location listener called with loc=${loc?.hashCode()}")
                     if (loc != null) {
-                        Log.d(TAG, "handleGetLocation: Got location result: errorCode=${loc.errorCode}, errorInfo=${loc.errorInfo}")
+                        Logging.d(TAG, "handleGetLocation: Got location result: errorCode=${loc.errorCode}, errorInfo=${loc.errorInfo}")
                         if (loc.errorCode == 0) {
-                            Log.d(TAG, "handleGetLocation: Location success")
+                            Logging.d(TAG, "handleGetLocation: Location success")
                             continuation.resume(Result.success(loc))
                         } else {
-                            Log.e(TAG, "handleGetLocation: Location error ${loc.errorCode}: ${loc.errorInfo}")
+                            Logging.e(TAG, "handleGetLocation: Location error ${loc.errorCode}: ${loc.errorInfo}")
                             continuation.resume(Result.failure(RuntimeException("Amap error ${loc.errorCode}: ${loc.errorInfo}")))
                         }
                     } else {
-                        Log.w(TAG, "handleGetLocation: Location result is null")
+                        Logging.w(TAG, "handleGetLocation: Location result is null")
                         continuation.resume(Result.failure(RuntimeException("Location result is null")))
                     }
                     client.stopLocation()
                     client.onDestroy()
                 }
                 client.startLocation()
-                Log.d(TAG, "handleGetLocation: Location client started")
+                Logging.d(TAG, "handleGetLocation: Location client started")
 
                 continuation.invokeOnCancellation {
-                    Log.d(TAG, "handleGetLocation: Location request cancelled")
+                    Logging.d(TAG, "handleGetLocation: Location request cancelled")
                     client.stopLocation()
                     client.onDestroy()
                 }
@@ -414,7 +423,7 @@ class PhoneBridge(
 
             locationResult.fold(
                 onSuccess = { location ->
-                    Log.d(TAG, "handleGetLocation: Location success: lat=${location.latitude}, lng=${location.longitude}, address=${location.address}")
+                    Logging.d(TAG, "handleGetLocation: Location success: lat=${location.latitude}, lng=${location.longitude}, address=${location.address}")
                     listOf(UIMessagePart.Text(
                         buildJsonObject {
                             put("success", true)
@@ -432,7 +441,7 @@ class PhoneBridge(
                     ))
                 },
                 onFailure = { e ->
-                    Log.e(TAG, "handleGetLocation: Failed to obtain GPS location", e)
+                    Logging.e(TAG, "handleGetLocation: Failed to obtain GPS location", e)
                     listOf(UIMessagePart.Text(
                         buildJsonObject {
                             put("error", true)
@@ -442,23 +451,23 @@ class PhoneBridge(
                 }
             )
         } catch (e: Exception) {
-            Log.e(TAG, "handleGetLocation: Exception during location request", e)
+            Logging.e(TAG, "handleGetLocation: Exception during location request", e)
             listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
                     put("message", "Location error: ${e.javaClass.simpleName}: ${e.message}")
-                    put("stackTrace", Log.getStackTraceString(e).take(1000))
+                    put("stackTrace", e.stackTraceToString().take(1000))
                 }.toString()
             ))
         }
     }
 
     private suspend fun handleTakePhoto(): List<UIMessagePart> {
-        Log.d(TAG, "handleTakePhoto: Requesting photo capture")
+        Logging.d(TAG, "handleTakePhoto: Requesting photo capture")
         return suspendCancellableCoroutine { continuation ->
             eventBus.emit(AppEvent.TakePhoto { uri ->
                 if (uri != null) {
-                    Log.d(TAG, "handleTakePhoto: Photo captured: $uri")
+                    Logging.d(TAG, "handleTakePhoto: Photo captured: $uri")
                     val payload = buildJsonObject {
                         put("success", true)
                         put("image_url", uri.toString())
@@ -471,7 +480,7 @@ class PhoneBridge(
                         )
                     )
                 } else {
-                    Log.w(TAG, "handleTakePhoto: Photo capture cancelled or failed")
+                    Logging.w(TAG, "handleTakePhoto: Photo capture cancelled or failed")
                     continuation.resume(
                         listOf(UIMessagePart.Text(
                             buildJsonObject {
@@ -486,7 +495,7 @@ class PhoneBridge(
     }
 
     private fun handleOpenApp(id: String): List<UIMessagePart> {
-        Log.d(TAG, "handleOpenApp: Opening app/url: $id")
+        Logging.d(TAG, "handleOpenApp: Opening app/url: $id")
         return try {
             val intent = if (id.contains("://")) {
                 Intent(Intent.ACTION_VIEW, Uri.parse(id))
@@ -504,7 +513,7 @@ class PhoneBridge(
                     }.toString()
                 ))
             } else {
-                Log.w(TAG, "handleOpenApp: App not found or invalid URL: $id")
+                Logging.w(TAG, "handleOpenApp: App not found or invalid URL: $id")
                 listOf(UIMessagePart.Text(
                     buildJsonObject {
                         put("error", true)
@@ -513,7 +522,7 @@ class PhoneBridge(
                 ))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "handleOpenApp: Failed to open app/url", e)
+            Logging.e(TAG, "handleOpenApp: Failed to open app/url", e)
             listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
@@ -525,7 +534,7 @@ class PhoneBridge(
     }
 
     private fun handleListFiles(relativePath: String): List<UIMessagePart> {
-        Log.d(TAG, "handleListFiles: Listing files at path: $relativePath")
+        Logging.d(TAG, "handleListFiles: Listing files at path: $relativePath")
 
         val permissionCheck = ContextCompat.checkSelfPermission(
             context,
@@ -535,7 +544,7 @@ class PhoneBridge(
                 Manifest.permission.READ_EXTERNAL_STORAGE
         )
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "handleListFiles: Storage permission not granted")
+            Logging.w(TAG, "handleListFiles: Storage permission not granted")
             return listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
@@ -581,10 +590,10 @@ class PhoneBridge(
             ))
         }
 
-        Log.d(TAG, "handleListFiles: Resolved directory: ${targetDir.absolutePath}")
+        Logging.d(TAG, "handleListFiles: Resolved directory: ${targetDir.absolutePath}")
 
         if (!targetDir.exists() || !targetDir.isDirectory) {
-            Log.w(TAG, "handleListFiles: Directory does not exist: ${targetDir.absolutePath}")
+            Logging.w(TAG, "handleListFiles: Directory does not exist: ${targetDir.absolutePath}")
             return listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
@@ -606,7 +615,7 @@ class PhoneBridge(
 
         val displayPath = targetDir.absolutePath.removePrefix(rootPath).ifEmpty { "/" }
 
-        Log.d(TAG, "handleListFiles: Found ${files.size} files in $displayPath")
+        Logging.d(TAG, "handleListFiles: Found ${files.size} files in $displayPath")
 
         // List app-specific directories as options
         val appDirs = buildJsonArray {
@@ -629,7 +638,7 @@ class PhoneBridge(
     }
 
     private fun handleReadFileInfo(relativePath: String): List<UIMessagePart> {
-        Log.d(TAG, "handleReadFileInfo: Getting file info for: $relativePath")
+        Logging.d(TAG, "handleReadFileInfo: Getting file info for: $relativePath")
 
         val permissionCheck = ContextCompat.checkSelfPermission(
             context,
@@ -639,7 +648,7 @@ class PhoneBridge(
                 Manifest.permission.READ_EXTERNAL_STORAGE
         )
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "handleReadFileInfo: Storage permission not granted")
+            Logging.w(TAG, "handleReadFileInfo: Storage permission not granted")
             return listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
@@ -694,7 +703,7 @@ class PhoneBridge(
         }
 
         if (!file.exists()) {
-            Log.w(TAG, "handleReadFileInfo: File not found: ${file.absolutePath}")
+            Logging.w(TAG, "handleReadFileInfo: File not found: ${file.absolutePath}")
             return listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
@@ -704,7 +713,7 @@ class PhoneBridge(
             ))
         }
 
-        Log.d(TAG, "handleReadFileInfo: Got info for: ${file.absolutePath}")
+        Logging.d(TAG, "handleReadFileInfo: Got info for: ${file.absolutePath}")
 
         return listOf(UIMessagePart.Text(
             buildJsonObject {
@@ -721,13 +730,13 @@ class PhoneBridge(
     }
 
     private fun handleSearchContacts(name: String): List<UIMessagePart> {
-        Log.d(TAG, "handleSearchContacts: Searching for: $name")
+        Logging.d(TAG, "handleSearchContacts: Searching for: $name")
 
         val permissionCheck = ContextCompat.checkSelfPermission(
             context, Manifest.permission.READ_CONTACTS
         )
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "handleSearchContacts: READ_CONTACTS permission not granted")
+            Logging.w(TAG, "handleSearchContacts: READ_CONTACTS permission not granted")
             return listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
@@ -773,7 +782,7 @@ class PhoneBridge(
             }
         }
 
-        Log.d(TAG, "handleSearchContacts: Found ${contacts.size} contacts")
+        Logging.d(TAG, "handleSearchContacts: Found ${contacts.size} contacts")
 
         return listOf(UIMessagePart.Text(
             buildJsonObject {
@@ -786,13 +795,13 @@ class PhoneBridge(
     }
 
     private fun handleCallContactByName(name: String): List<UIMessagePart> {
-        Log.d(TAG, "handleCallContactByName: Calling contact: $name")
+        Logging.d(TAG, "handleCallContactByName: Calling contact: $name")
 
         val permissionCheck = ContextCompat.checkSelfPermission(
             context, Manifest.permission.READ_CONTACTS
         )
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "handleCallContactByName: READ_CONTACTS permission not granted")
+            Logging.w(TAG, "handleCallContactByName: READ_CONTACTS permission not granted")
             return listOf(UIMessagePart.Text(
                 buildJsonObject {
                     put("error", true)
@@ -829,7 +838,7 @@ class PhoneBridge(
             }
         }
 
-        Log.d(TAG, "handleCallContactByName: Found ${contacts.size} matches")
+        Logging.d(TAG, "handleCallContactByName: Found ${contacts.size} matches")
 
         return when {
             contacts.isEmpty() -> {
@@ -843,11 +852,11 @@ class PhoneBridge(
             }
             contacts.size == 1 -> {
                 val (contactName, phoneNumber) = contacts.first()
-                Log.d(TAG, "handleCallContactByName: Single match: $contactName -> $phoneNumber")
+                Logging.d(TAG, "handleCallContactByName: Single match: $contactName -> $phoneNumber")
                 handleMakeCall(phoneNumber)
             }
             else -> {
-                Log.d(TAG, "handleCallContactByName: Multiple matches, returning list")
+                Logging.d(TAG, "handleCallContactByName: Multiple matches, returning list")
                 listOf(UIMessagePart.Text(
                     buildJsonObject {
                         put("error", true)
@@ -873,7 +882,7 @@ class PhoneBridge(
         toLocation: String,
         routeType: String
     ): List<UIMessagePart> {
-        Log.d(TAG, "handleAmapNavigate: from=$fromLocation, to=$toLocation, type=$routeType")
+        Logging.d(TAG, "handleAmapNavigate: from=$fromLocation, to=$toLocation, type=$routeType")
 
         // Parse from location
         val fromResult = parseLocation(fromLocation)
@@ -913,10 +922,10 @@ class PhoneBridge(
                 append("sourceApplication=RikkaHub&")
                 append("slat=$fromLat&")
                 append("slon=$fromLng&")
-                append("sname=${Uri.encode(fromName ?: "Start")}&")
+                append("sname=${Uri.encode(fromName ?: fromLocation)}&")
                 append("dlat=$toLat&")
                 append("dlon=$toLng&")
-                append("dname=${Uri.encode(toName ?: "Destination")}&")
+                append("dname=${Uri.encode(toName ?: toLocation)}&")
                 append("dev=0&")
                 val t = when (routeType.lowercase()) {
                     "transit" -> 1
@@ -934,10 +943,12 @@ class PhoneBridge(
                     if (!fromName.isNullOrBlank()) {
                         append("sname=${Uri.encode(fromName)}&")
                     }
+                } else if (!fromName.isNullOrBlank()) {
+                    append("sname=${Uri.encode(fromName)}&")
                 }
                 append("dlat=$toLat&")
                 append("dlon=$toLng&")
-                append("dname=${Uri.encode(toName ?: "Destination")}&")
+                append("dname=${Uri.encode(toName ?: toLocation)}&")
                 append("dev=0&")
                 val t = when (routeType.lowercase()) {
                     "transit" -> 1
@@ -946,14 +957,21 @@ class PhoneBridge(
                 }
                 append("t=$t")
             } else {
-                // Only place names - use keyword navigation with destination, user can select start point in app
-                append("androidamap://keywordNavi?")
+                // No coordinates — use route format with names only (Amap resolves them)
+                append("androidamap://route?")
                 append("sourceApplication=RikkaHub&")
-                append("keyword=${Uri.encode(toName ?: toLocation)}&")
-                append("style=2")
+                append("sname=${Uri.encode(fromName ?: fromLocation)}&")
+                append("dname=${Uri.encode(toName ?: toLocation)}&")
+                append("dev=0&")
+                val t = when (routeType.lowercase()) {
+                    "transit" -> 1
+                    "walking" -> 2
+                    else -> 0 // driving
+                }
+                append("t=$t")
             }
         }
-        Log.d(TAG, "handleAmapNavigate: built uri=$uri")
+        Logging.d(TAG, "handleAmapNavigate: built uri=$uri")
 
         return listOf(UIMessagePart.Text(uri))
     }
@@ -961,7 +979,7 @@ class PhoneBridge(
     private suspend fun handleAmapShow(
         location: String
     ): List<UIMessagePart> {
-        Log.d(TAG, "handleAmapShow: location=$location")
+        Logging.d(TAG, "handleAmapShow: location=$location")
 
         // Parse location
         val locationResult = parseLocation(location)
@@ -980,12 +998,12 @@ class PhoneBridge(
 
         // Build Amap URI
         val uri = if (lat != null && lng != null) {
-            "androidamap://viewMap?sourceApplication=RikkaHub&poiname=${Uri.encode(name ?: "Location")}&lat=$lat&lon=$lng&dev=0"
+            "androidamap://viewMap?sourceApplication=RikkaHub&poiname=${Uri.encode(name ?: location)}&lat=$lat&lon=$lng&dev=0"
         } else {
             "androidamap://keywordNavi?sourceApplication=RikkaHub&keyword=${Uri.encode(name ?: location)}&style=2"
         }
 
-        Log.d(TAG, "handleAmapShow: built uri=$uri")
+        Logging.d(TAG, "handleAmapShow: built uri=$uri")
 
         return listOf(UIMessagePart.Text(uri))
     }
@@ -1002,7 +1020,8 @@ class PhoneBridge(
                         return Result.failure(RuntimeException("GPS permission not granted"))
                     }
 
-                    val apiKey = getAmapApiKey()
+                    val amapKeyConfig = getHardwareKeys().findHardwareKey<HardwareKeyConfig.Amap>()
+                    val apiKey = amapKeyConfig?.apiKey
                     if (apiKey.isNullOrBlank()) {
                         return Result.failure(RuntimeException("Amap API key not configured"))
                     }
@@ -1071,7 +1090,7 @@ class PhoneBridge(
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "parseLocation: error", e)
+            Logging.e(TAG, "parseLocation: error", e)
             Result.failure(e)
         }
     }

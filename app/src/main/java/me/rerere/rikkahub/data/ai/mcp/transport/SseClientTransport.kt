@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.data.ai.mcp.transport
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.sse.ClientSSESession
 import io.ktor.client.plugins.sse.sseSession
@@ -114,7 +114,7 @@ class SseClientTransport(
                 error("Error POSTing to endpoint (HTTP ${response.status}): $bodyText")
             }
 
-            Log.d(TAG, "Client successfully sent message via SSE $endpoint")
+            Logging.d(TAG, "Client successfully sent message via SSE $endpoint")
         } catch (e: Throwable) {
             _onError(e)
             throw e
@@ -167,7 +167,7 @@ class SseClientTransport(
                 Url("$baseUrl/$eventData")
             }
             endpoint.complete(endpointUrl.toString())
-            Log.d(TAG, "Client connected to endpoint: $endpointUrl")
+            Logging.d(TAG, "Client connected to endpoint: $endpointUrl")
         } catch (e: Throwable) {
             _onError(e)
             endpoint.completeExceptionally(e)

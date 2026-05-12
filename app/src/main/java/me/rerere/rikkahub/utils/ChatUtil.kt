@@ -2,7 +2,7 @@ package me.rerere.rikkahub.utils
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
+import me.rerere.common.android.Logging
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.context.Navigator
@@ -17,7 +17,7 @@ fun navigateToChatPage(
     initFiles: List<Uri> = emptyList(),
     nodeId: Uuid? = null,
 ) {
-    Log.i(TAG, "navigateToChatPage: navigate to $chatId")
+    Logging.i(TAG, "navigateToChatPage: navigate to $chatId")
     navigator.navigate(
         Screen.Chat(
             id = chatId.toString(),

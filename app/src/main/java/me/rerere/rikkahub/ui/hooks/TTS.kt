@@ -2,7 +2,7 @@ package me.rerere.rikkahub.ui.hooks
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -151,12 +151,12 @@ private class CustomTtsStateImpl(
 
     override fun pause() {
         controller.pause()
-        Log.d("CustomTtsState", "TTS paused")
+        Logging.d("CustomTtsState", "TTS paused")
     }
 
     override fun resume() {
         controller.resume()
-        Log.d("CustomTtsState", "TTS resumed")
+        Logging.d("CustomTtsState", "TTS resumed")
     }
 
     override fun skipNext() {

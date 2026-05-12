@@ -4,7 +4,6 @@ import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
@@ -201,7 +200,7 @@ class ChatService(
                 onIdle = { removeSession(it) }
             ).also {
                 _sessionsVersion.value++
-                Log.i(TAG, "createSession: $id (total: ${sessions.size + 1})")
+                Logging.i(TAG, "createSession: $id (total: ${sessions.size + 1})")
             }
         }
     }
@@ -209,13 +208,13 @@ class ChatService(
     private fun removeSession(conversationId: Uuid) {
         val session = sessions[conversationId] ?: return
         if (session.isInUse) {
-            Log.d(TAG, "removeSession: skipped $conversationId (still in use)")
+            Logging.d(TAG, "removeSession: skipped $conversationId (still in use)")
             return
         }
         if (sessions.remove(conversationId, session)) {
             session.cleanup()
             _sessionsVersion.value++
-            Log.i(TAG, "removeSession: $conversationId (remaining: ${sessions.size})")
+            Logging.i(TAG, "removeSession: $conversationId (remaining: ${sessions.size})")
         }
     }
 
@@ -1060,7 +1059,7 @@ class ChatService(
         }
         if (deletedFiles.isNotEmpty()) {
             filesManager.deleteChatFiles(deletedFiles)
-            Log.w(TAG, "checkFilesDelete: $deletedFiles")
+            Logging.w(TAG, "checkFilesDelete: $deletedFiles")
         }
     }
 

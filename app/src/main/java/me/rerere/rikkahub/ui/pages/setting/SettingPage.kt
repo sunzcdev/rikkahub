@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -211,6 +213,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = { Text(stringResource(R.string.setting_page_extensions_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_extensions)) },
                     )
+                    item(
+                        onClick = { navController.navigate(Screen.JijiSettings) },
+                        leadingContent = { Icon(HugeIcons.InLove, null) },
+                        supportingContent = { Text("唧唧主动式个人助手设置") },
+                        headlineContent = { Text("唧唧 (Jiji)") },
+                    )
                 }
             }
 
@@ -262,23 +270,17 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_web_server)) },
                     )
                     item(
+                        onClick = { navController.navigate(Screen.SettingHardwareBridge) },
                         leadingContent = { Icon(HugeIcons.Zap, null) },
+                        supportingContent = { Text("管理 API Key 配置（高德地图、OpenWeather 等）") },
                         headlineContent = { Text(stringResource(R.string.phone_bridge_title)) },
                     )
-                    item {
-                        val apiKey = settings.amapApiKey
-                        OutlinedTextField(
-                            value = apiKey,
-                            onValueChange = { newVal: String -> vm.updateSettings(settings.copy(amapApiKey = newVal)) },
-                            label = { Text(stringResource(R.string.amap_api_key)) },
-                            placeholder = { Text(stringResource(R.string.amap_api_key_desc)) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                    }
+                    item(
+                        onClick = { navController.navigate(Screen.SettingPerception) },
+                        leadingContent = { Icon(HugeIcons.Brain02, null) },
+                        supportingContent = { Text("唧唧的感知数据，包括位置和天气历史") },
+                        headlineContent = { Text("感知数据管理") },
+                    )
                 }
             }
 

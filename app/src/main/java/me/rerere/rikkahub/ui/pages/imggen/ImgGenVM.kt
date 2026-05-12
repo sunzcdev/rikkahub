@@ -1,7 +1,7 @@
 package me.rerere.rikkahub.ui.pages.imggen
 
 import android.app.Application
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -157,7 +157,7 @@ class ImgGenVM(
                 _currentGeneratedImages.value = newImages
             } catch (e: Exception) {
                 if(e is CancellationException) return@launch
-                Log.e(TAG, "Failed to generate image", e)
+                Logging.e(TAG, "Failed to generate image", e)
                 _error.value = e.message ?: "Unknown error occurred"
             } finally {
                 _isGenerating.value = false
@@ -208,7 +208,7 @@ class ImgGenVM(
                     file.delete()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to delete image", e)
+                Logging.e(TAG, "Failed to delete image", e)
                 _error.value = "Failed to delete image"
             }
         }

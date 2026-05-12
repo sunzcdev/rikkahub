@@ -1,7 +1,7 @@
 package me.rerere.tts.provider.providers
 
 import android.content.Context
-import android.util.Log
+import me.rerere.common.android.Logging
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
@@ -65,7 +65,7 @@ class MiniMaxTTSProvider : TTSProvider<TTSProviderSetting.MiniMax> {
             })
         }
 
-        Log.i(TAG, "generateSpeech: $requestBody")
+        Logging.i(TAG, "generateSpeech: $requestBody")
 
         val httpRequest = Request.Builder()
             .url("${providerSetting.baseUrl}/t2a_v2")
@@ -78,7 +78,7 @@ class MiniMaxTTSProvider : TTSProvider<TTSProviderSetting.MiniMax> {
 
         httpClient.sseFlow(httpRequest).collect {
             when (it) {
-                is SseEvent.Open -> Log.i(TAG, "SSE connection opened")
+                is SseEvent.Open -> Logging.i(TAG, "SSE connection opened")
                 is SseEvent.Event -> {
                     try {
                         val data = json.decodeFromString<MiniMaxResponse>(it.data)
@@ -103,12 +103,12 @@ class MiniMaxTTSProvider : TTSProvider<TTSProviderSetting.MiniMax> {
                         )
                         hasEmittedAudio = true
                     } catch (e: Exception) {
-                        Log.e(TAG, "Failed to process audio chunk", e)
+                        Logging.e(TAG, "Failed to process audio chunk", e)
                     }
                 }
 
                 is SseEvent.Closed -> {
-                    Log.i(TAG, "SSE connection closed")
+                    Logging.i(TAG, "SSE connection closed")
                     // Emit final chunk if we haven't already
                     if (hasEmittedAudio) {
                         emit(
@@ -124,7 +124,7 @@ class MiniMaxTTSProvider : TTSProvider<TTSProviderSetting.MiniMax> {
                 }
 
                 is SseEvent.Failure -> {
-                    Log.e(TAG, "SSE connection failed", it.throwable)
+                    Logging.e(TAG, "SSE connection failed", it.throwable)
                     throw it.throwable ?: Exception("MiniMax TTS streaming failed")
                 }
             }

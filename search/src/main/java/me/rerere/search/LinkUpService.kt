@@ -1,6 +1,6 @@
 package me.rerere.search
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -83,7 +83,7 @@ object LinkUpService : SearchService<SearchServiceOptions.LinkUpOptions> {
                 .addHeader("Content-Type", "application/json")
                 .build()
 
-            Log.i(TAG, "search: $query")
+            Logging.i(TAG, "search: $query")
 
             val response = httpClient.newCall(request).await()
             if (response.isSuccessful) {

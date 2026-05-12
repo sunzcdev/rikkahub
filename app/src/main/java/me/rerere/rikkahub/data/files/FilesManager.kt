@@ -6,7 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
-import android.util.Log
+import me.rerere.common.android.Logging
 import android.webkit.MimeTypeMap
 import androidx.core.net.toFile
 import androidx.core.net.toUri
@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
-import me.rerere.common.android.Logging
 import me.rerere.rikkahub.AppScope
 import me.rerere.rikkahub.data.db.entity.ManagedFileEntity
 import me.rerere.rikkahub.data.repository.FilesRepository
@@ -151,7 +150,7 @@ class FilesManager(
                 newUris.add(file.toUri())
             }.onFailure {
                 it.printStackTrace()
-                Log.e(TAG, "createChatFilesByContents: Failed to save file from $uri", it)
+                Logging.e(TAG, "createChatFilesByContents: Failed to save file from $uri", it)
                 Logging.log(
                     TAG,
                     "createChatFilesByContents: Failed to save file from $uri ${it.message} | ${it.stackTraceToString()}"
@@ -195,7 +194,7 @@ class FilesManager(
                                 val bitmap = BitmapFactory.decodeByteArray(sourceByteArray, 0, sourceByteArray.size)
                                 val byteArray = bitmap.compressToPng()
                                 val urls = createChatFilesByByteArrays(listOf(byteArray))
-                                Log.i(
+                                Logging.i(
                                     TAG,
                                     "convertBase64ImagePartToLocalFile: convert base64 img to ${urls.joinToString(", ")}"
                                 )
@@ -314,7 +313,7 @@ class FilesManager(
                         val bitmap = BitmapFactory.decodeStream(connection.inputStream)
                         activityContext.exportImage(activity, bitmap)
                     } else {
-                        Log.e(
+                        Logging.e(
                             TAG,
                             "saveMessageImage: Failed to download image from $image, response code: ${connection.responseCode}"
                         )
@@ -405,7 +404,7 @@ class FilesManager(
                     )
                 )
             }.onFailure {
-                Log.e(TAG, "trackUploadFile: Failed to track file ${file.absolutePath}", it)
+                Logging.e(TAG, "trackUploadFile: Failed to track file ${file.absolutePath}", it)
                 Logging.log(
                     TAG,
                     "trackUploadFile: Failed to track file ${file.absolutePath} ${it.message} | ${it.stackTraceToString()}"
@@ -448,7 +447,7 @@ class FilesManager(
             }
             fileName
         }.onFailure {
-            Log.w(TAG, "getFileNameFromUri: Failed to query display name for $uri", it)
+            Logging.w(TAG, "getFileNameFromUri: Failed to query display name for $uri", it)
         }.getOrNull()
     }
 
@@ -457,7 +456,7 @@ class FilesManager(
             "content" -> runCatching {
                 context.contentResolver.getType(uri)
             }.onFailure {
-                Log.w(TAG, "getFileMimeType: Failed to resolve MIME for $uri", it)
+                Logging.w(TAG, "getFileMimeType: Failed to resolve MIME for $uri", it)
             }.getOrNull()
             else -> null
         }

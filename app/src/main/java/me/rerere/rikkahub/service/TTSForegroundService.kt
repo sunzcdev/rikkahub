@@ -5,7 +5,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import kotlinx.coroutines.CoroutineScope
@@ -48,7 +48,7 @@ class TTSForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "Service created")
+        Logging.d(TAG, "Service created")
         observePlaybackState()
     }
 
@@ -83,13 +83,13 @@ class TTSForegroundService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        Log.d(TAG, "Task removed — keeping foreground service alive")
+        Logging.d(TAG, "Task removed — keeping foreground service alive")
     }
 
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
-        Log.d(TAG, "Service destroyed")
+        Logging.d(TAG, "Service destroyed")
     }
 
     private fun startForegroundCompat() {

@@ -432,6 +432,8 @@
   <string name="notification_web_server_starting">Starting...</string>
   <string name="notification_web_server_stop">Stop</string>
   <string name="notification_channel_tts_playback">TTS Playback</string>
+  <string name="notification_channel_jiji_proactive">Jiji (唧唧)</string>
+  <string name="notification_channel_jiji_proactive_desc">Proactive assistant Jiji\'s notifications</string>
   <string name="permission_camera">Camera</string>
   <string name="permission_camera_desc">Camera permission is required to take photos</string>
   <string name="permission_desc_goto_setting">Some permissions have been permanently denied, please go to the app settings to manually enable them:</string>
@@ -1048,8 +1050,12 @@
   <string name="group_chat_manage_participants">Manage Participants</string>
   <string name="phone_bridge_title">Phone Hardware Bridge</string>
   <string name="phone_bridge_desc">Allows AI to access hardware features like GPS, Camera, Vibration, etc.</string>
+  <string name="weather_tool_title">Weather</string>
+  <string name="weather_tool_desc">Allows AI to check current weather conditions for any city</string>
   <string name="amap_api_key">Amap API Key</string>
   <string name="amap_api_key_desc">API Key for Amap (Gaode Maps) location services</string>
+  <string name="open_weather_api_key">OpenWeather API Key</string>
+  <string name="open_weather_api_key_desc">API Key for OpenWeatherMap weather data</string>
   <string name="chat_settings">Chat Settings</string>
   <string name="participant_disabled">Disabled</string>
   <string name="search_chat_messages">Search Chat Messages</string>

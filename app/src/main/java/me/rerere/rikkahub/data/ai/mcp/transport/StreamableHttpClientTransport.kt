@@ -1,6 +1,6 @@
 package me.rerere.rikkahub.data.ai.mcp.transport
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.sse.ClientSSESession
 import io.ktor.client.plugins.sse.SSEClientException
@@ -83,7 +83,7 @@ public class StreamableHttpClientTransport(
         if (!initialized.compareAndSet(expectedValue = false, newValue = true)) {
             error("StreamableHttpClientTransport already started!")
         }
-        Log.d(TAG, "Client transport starting...")
+        Logging.d(TAG, "Client transport starting...")
     }
 
     /**
@@ -103,7 +103,7 @@ public class StreamableHttpClientTransport(
         onResumptionToken: ((String) -> Unit)? = null,
     ) {
         check(initialized.load()) { "Transport is not started" }
-        Log.d(TAG, "Client sending message via POST to $url: ${McpJson.encodeToString(message)}")
+        Logging.d(TAG, "Client sending message via POST to $url: ${McpJson.encodeToString(message)}")
 
         // If we have a resumption token, reconnect the SSE stream with it
         resumptionToken?.let { token ->
@@ -134,7 +134,7 @@ public class StreamableHttpClientTransport(
                     try {
                         startSseSession(onResumptionToken = onResumptionToken)
                     } catch (e: Exception) {
-                        Log.w(TAG, "Failed to start SSE session, falling back to JSON-only mode", e)
+                        Logging.w(TAG, "Failed to start SSE session, falling back to JSON-only mode", e)
                         _onError(e)
                     }
                 }
@@ -178,7 +178,7 @@ public class StreamableHttpClientTransport(
 
     override suspend fun close() {
         if (!initialized.load()) return // Already closed or never started
-        Log.d(TAG, "Client transport closing.")
+        Logging.d(TAG, "Client transport closing.")
 
         try {
             // Try to terminate session if we have one
@@ -200,7 +200,7 @@ public class StreamableHttpClientTransport(
      */
     public suspend fun terminateSession() {
         if (sessionId == null) return
-        Log.d(TAG, "Terminating session: $sessionId")
+        Logging.d(TAG, "Terminating session: $sessionId")
         val response = client.delete(url) {
             applyCommonHeaders(this)
             requestBuilder()
@@ -212,14 +212,14 @@ public class StreamableHttpClientTransport(
                 response.status.value,
                 "Failed to terminate session: ${response.status.description}",
             )
-            Log.e(TAG, "Failed to terminate session", error)
+            Logging.e(TAG, "Failed to terminate session", error)
             _onError(error)
             throw error
         }
 
         sessionId = null
         lastEventId = null
-        Log.d(TAG, "Session terminated successfully")
+        Logging.d(TAG, "Session terminated successfully")
     }
 
     private suspend fun startSseSession(
@@ -230,7 +230,7 @@ public class StreamableHttpClientTransport(
         sseSession?.cancel()
         sseJob?.cancelAndJoin()
 
-        Log.d(TAG, "Client attempting to start SSE session at url: $url")
+        Logging.d(TAG, "Client attempting to start SSE session at url: $url")
         try {
             sseSession = client.sseSession(
                 urlString = url,
@@ -243,21 +243,21 @@ public class StreamableHttpClientTransport(
                 (resumptionToken ?: lastEventId)?.let { headers.append(MCP_RESUMPTION_TOKEN_HEADER, it) }
                 requestBuilder()
             }
-            Log.d(TAG, "Client SSE session started successfully.")
+            Logging.d(TAG, "Client SSE session started successfully.")
         } catch (e: SSEClientException) {
             val responseStatus = e.response?.status
             val responseContentType = e.response?.contentType()
 
             // 405 means server doesn't support SSE at GET endpoint - this is expected and valid
             if (responseStatus == HttpStatusCode.MethodNotAllowed) {
-                Log.i(TAG, "Server returned 405 for GET/SSE, stream disabled.")
+                Logging.i(TAG, "Server returned 405 for GET/SSE, stream disabled.")
                 return
             }
 
             // If server returns application/json, it means it doesn't support SSE for this session
             // This is valid per spec - server can choose to only use JSON responses
             if (responseContentType?.match(ContentType.Application.Json) == true) {
-                Log.i(TAG, "Server returned application/json for GET/SSE, using JSON-only mode.")
+                Logging.i(TAG, "Server returned application/json for GET/SSE, using JSON-only mode.")
                 return
             }
 
@@ -288,7 +288,7 @@ public class StreamableHttpClientTransport(
                     lastEventId = it
                     onResumptionToken?.invoke(it)
                 }
-                Log.d(TAG, "Client received SSE event: event=${event.event}, data=${event.data}, id=${event.id}")
+                Logging.d(TAG, "Client received SSE event: event=${event.event}, data=${event.data}, id=${event.id}")
                 when (event.event) {
                     null, "message" ->
                         event.data?.takeIf { it.isNotEmpty() }?.let { json ->
@@ -318,7 +318,7 @@ public class StreamableHttpClientTransport(
         replayMessageId: RequestId?,
         onResumptionToken: ((String) -> Unit)?,
     ) {
-        Log.d(TAG, "Handling inline SSE from POST response")
+        Logging.d(TAG, "Handling inline SSE from POST response")
         val channel = response.bodyAsChannel()
 
         val sb = StringBuilder()

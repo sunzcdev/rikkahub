@@ -1,7 +1,7 @@
 package me.rerere.rikkahub.data.ai.transformers
 
 import android.content.Context
-import android.util.Log
+import me.rerere.common.android.Logging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.serializer
@@ -82,7 +82,7 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
     suspend fun performOcr(part: UIMessagePart.Image): String = runCatching {
         // Check cache first
         cache.get(part.url)?.let { cachedResult ->
-            Log.i(TAG, "performOcr: Using cached result for ${part.url}")
+            Logging.i(TAG, "performOcr: Using cached result for ${part.url}")
             return cachedResult
         }
 
@@ -104,7 +104,7 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
             ),
         )
         val content = result.choices[0].message?.toText() ?: "[ERROR, OCR failed]"
-        Log.i(TAG, "performOcr: $content")
+        Logging.i(TAG, "performOcr: $content")
         val ocrResult = """
             <image_file_ocr>
                $content

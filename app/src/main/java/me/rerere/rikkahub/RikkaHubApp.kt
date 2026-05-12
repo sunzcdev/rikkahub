@@ -4,7 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.compose.foundation.ComposeFoundationFlags
 import androidx.compose.runtime.Composer
 import androidx.compose.runtime.tooling.ComposeStackTraceMode
@@ -29,6 +29,11 @@ import me.rerere.rikkahub.di.repositoryModule
 import me.rerere.rikkahub.di.viewModelModule
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.jiji.JijiIntegration
+import me.rerere.rikkahub.jiji.JijiNotificationManager
+import me.rerere.rikkahub.jiji.jijiModule
+import me.rerere.rikkahub.jiji.JijiSchedulerService
+import me.rerere.rikkahub.jiji.JijiConfigStore
 import me.rerere.rikkahub.service.WebServerService
 import me.rerere.rikkahub.utils.CrashHandler
 import me.rerere.rikkahub.utils.DatabaseUtil
@@ -48,11 +53,12 @@ const val TTS_PLAYBACK_NOTIFICATION_CHANNEL_ID = "tts_playback"
 class RikkaHubApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        Logging.init(this) // 初始化持久化日志
         startKoin {
             androidLogger()
             androidContext(this@RikkaHubApp)
             workManagerFactory()
-            modules(appModule, viewModelModule, dataSourceModule, repositoryModule)
+            modules(appModule, viewModelModule, dataSourceModule, repositoryModule, jijiModule)
         }
         this.createNotificationChannel()
 
@@ -80,6 +86,9 @@ class RikkaHubApp : Application() {
         // Start WebServer if enabled in settings
         startWebServerIfEnabled()
 
+        // Start Jiji if enabled
+        startJijiIfEnabled()
+
         // Increment launch count
         incrementLaunchCount()
 
@@ -92,9 +101,9 @@ class RikkaHubApp : Application() {
                 val store = get<SettingsStore>()
                 val current = store.settingsFlowRaw.first()
                 store.update(current.copy(launchCount = current.launchCount + 1))
-                Log.i(TAG, "incrementLaunchCount: ${store.settingsFlowRaw.first().launchCount}")
+                Logging.i(TAG, "incrementLaunchCount: ${store.settingsFlowRaw.first().launchCount}")
             }.onFailure {
-                Log.e(TAG, "incrementLaunchCount failed", it)
+                Logging.e(TAG, "incrementLaunchCount failed", it)
             }
         }
     }
@@ -113,7 +122,7 @@ class RikkaHubApp : Application() {
             runCatching {
                 get<FilesManager>().syncFolder()
             }.onFailure {
-                Log.e(TAG, "syncManagedFiles failed", it)
+                Logging.e(TAG, "syncManagedFiles failed", it)
             }
         }
     }
@@ -130,7 +139,7 @@ class RikkaHubApp : Application() {
                             android.Manifest.permission.POST_NOTIFICATIONS
                         ) != PackageManager.PERMISSION_GRANTED
                     ) {
-                        Log.w(TAG, "startWebServerIfEnabled: notification permission not granted, skipping")
+                        Logging.w(TAG, "startWebServerIfEnabled: notification permission not granted, skipping")
                         return@launch
                     }
                     val intent = Intent(this@RikkaHubApp, WebServerService::class.java).apply {
@@ -141,7 +150,7 @@ class RikkaHubApp : Application() {
                     startForegroundService(intent)
                 }
             }.onFailure {
-                Log.e(TAG, "startWebServerIfEnabled failed", it)
+                Logging.e(TAG, "startWebServerIfEnabled failed", it)
             }
         }
     }
@@ -183,6 +192,28 @@ class RikkaHubApp : Application() {
             .setShowBadge(false)
             .build()
         notificationManager.createNotificationChannel(ttsPlaybackChannel)
+
+        // 唧唧的通知渠道
+        get<JijiNotificationManager>().createNotificationChannel()
+    }
+
+    private fun startJijiIfEnabled() {
+        get<AppScope>().launch {
+            runCatching {
+                delay(300)
+
+                // 确保唧唧的 Assistant 预设存在（创建或获取）
+                val jijiIntegration = get<JijiIntegration>()
+                jijiIntegration.getOrCreateJijiAssistant()
+
+                val config = get<JijiConfigStore>().getConfig()
+                if (config.enabled) {
+                    JijiSchedulerService.start(this@RikkaHubApp)
+                }
+            }.onFailure {
+                Logging.e(TAG, "startJijiIfEnabled failed", it)
+            }
+        }
     }
 
     override fun onTerminate() {
@@ -197,6 +228,6 @@ class AppScope : CoroutineScope by CoroutineScope(
         + Dispatchers.Main
         + CoroutineName("AppScope")
         + CoroutineExceptionHandler { _, e ->
-        Log.e(TAG, "AppScope exception", e)
+        Logging.e(TAG, "AppScope exception", e)
     }
 )

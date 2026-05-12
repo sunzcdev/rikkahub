@@ -171,6 +171,21 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+
+            item(
+                headlineContent = {
+                    Text(stringResource(R.string.weather_tool_title))
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.weather_tool_desc))
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.Weather),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.Weather, it) }
+                    )
+                }
+            )
         }
     }
 }

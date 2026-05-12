@@ -1,6 +1,6 @@
 package me.rerere.search
 
-import android.util.Log
+import me.rerere.common.android.Logging
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -85,7 +85,7 @@ object SearXNGService : SearchService<SearchServiceOptions.SearXNGOptions> {
                 }
                 .build()
 
-            Log.i(TAG, "search: $url")
+            Logging.i(TAG, "search: $url")
 
             val response = httpClient.newCall(request).await()
             if (response.isSuccessful) {
