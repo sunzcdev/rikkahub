@@ -53,6 +53,7 @@ const val TTS_PLAYBACK_NOTIFICATION_CHANNEL_ID = "tts_playback"
 class RikkaHubApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        Logging.init(this) // 初始化持久化日志
         startKoin {
             androidLogger()
             androidContext(this@RikkaHubApp)

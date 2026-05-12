@@ -20,10 +20,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -80,6 +82,7 @@ fun ColumnScope.ConversationList(
     listState: LazyListState,
     modifier: Modifier = Modifier,
     assistants: List<Assistant> = emptyList(),
+    jijiUnreadCount: Int = 0,
     onClick: (Conversation) -> Unit = {},
     onDelete: (Conversation) -> Unit = {},
     onRegenerateTitle: (Conversation) -> Unit = {},
@@ -155,6 +158,7 @@ fun ColumnScope.ConversationList(
                         conversation = item.conversation,
                         selected = item.conversation.id == current?.id,
                         loading = item.conversation.id in conversationJobs,
+                        unreadCount = if (item.conversation.id.toString() == "00000000-0000-4000-a000-000000000002") jijiUnreadCount else 0,
                         assistants = assistants,
                         onClick = onClick,
                         onDelete = onDelete,
@@ -226,6 +230,7 @@ private fun ConversationItem(
     conversation: Conversation,
     selected: Boolean,
     loading: Boolean,
+    unreadCount: Int = 0,
     assistants: List<Assistant> = emptyList(),
     modifier: Modifier = Modifier,
     onDelete: (Conversation) -> Unit = {},
@@ -286,6 +291,20 @@ private fun ConversationItem(
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // 未读角标（唧唧会话）
+            if (unreadCount > 0) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Badge(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ) {
+                    Text(
+                        text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                        style = MaterialTheme.typography.labelSmall,
                     )
                 }
             }

@@ -107,19 +107,15 @@ fun JijiSettingsScreen(
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            Text(
-                text = "每日主动搭话上限: ${config.dailyProactiveLimit}",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Slider(
-                value = config.dailyProactiveLimit.toFloat(),
-                onValueChange = { value ->
+            SettingsSwitch(
+                title = "熵驱动主动搭话",
+                subtitle = "开启后唧唧会随机主动找您聊天，不再受每日次数限制",
+                checked = config.entropyEnabled,
+                onCheckedChange = { enabled ->
                     scope.launch {
-                        configStore.saveConfig(config.copy(dailyProactiveLimit = value.toInt()))
+                        configStore.saveConfig(config.copy(entropyEnabled = enabled))
                     }
                 },
-                valueRange = 1f..10f,
-                steps = 8,
             )
 
             Text(

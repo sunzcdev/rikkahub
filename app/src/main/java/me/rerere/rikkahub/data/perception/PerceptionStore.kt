@@ -43,44 +43,58 @@ class PerceptionStore(private val context: Context) {
         return memoryFlow.first()
     }
 
-    /** 追加位置记录（熵驱动：同区域不追加） */
+    /** 追加位置记录 */
     suspend fun appendLocation(snapshot: LocationSnapshot, force: Boolean = false) {
         context.perceptionStore.edit { preferences ->
             val current = readCurrent(preferences)
-            // 熵驱动：跟最后一条比，同区域不写（除非 force）
+
+            // 熵驱动：同区域跳过（相同 city + district + 无 POI 变化）
             if (!force) {
-                val lastLocation = current.locationHistory.lastOrNull()
-                if (lastLocation != null &&
-                    lastLocation.city == snapshot.city &&
-                    lastLocation.district == snapshot.district
+                val last = current.locationHistory.lastOrNull()
+                if (last != null && last.city == snapshot.city &&
+                    last.district == snapshot.district &&
+                    last.poiName == snapshot.poiName
                 ) {
-                    return@edit // 没变化，跳过
+                    return@edit
                 }
             }
+
+            val lastTimestamp = current.locationHistory.lastOrNull()?.timestamp
+            val interval = if (lastTimestamp != null) {
+                snapshot.timestamp - lastTimestamp
+            } else {
+                0L
+            }
             val updated = current.copy(
-                locationHistory = current.locationHistory + snapshot
+                locationHistory = current.locationHistory + snapshot.copy(intervalMs = interval)
             )
             preferences[KEY_MEMORY] = json.encodeToString(PerceptionMemory.serializer(), updated)
         }
     }
 
-    /** 追加天气记录（熵驱动：同温度区间+同状况不追加） */
+    /** 追加天气记录 */
     suspend fun appendWeather(snapshot: WeatherSnapshot, force: Boolean = false) {
         context.perceptionStore.edit { preferences ->
             val current = readCurrent(preferences)
-            // 熵驱动：跟最后一条比，同温度区间+同状况不写（除非 force）
+
+            // 熵驱动：同温度+同状况跳过
             if (!force) {
-                val lastWeather = current.weatherHistory.lastOrNull()
-                if (lastWeather != null &&
-                    lastWeather.city == snapshot.city &&
-                    lastWeather.condition == snapshot.condition &&
-                    kotlin.math.abs(lastWeather.temperature - snapshot.temperature) < PerceptionMemory.WEATHER_TEMP_THRESHOLD
+                val last = current.weatherHistory.lastOrNull()
+                if (last != null && last.condition == snapshot.condition &&
+                    last.temperature == snapshot.temperature
                 ) {
-                    return@edit // 没显著变化，跳过
+                    return@edit
                 }
             }
+
+            val lastTimestamp = current.weatherHistory.lastOrNull()?.timestamp
+            val interval = if (lastTimestamp != null) {
+                snapshot.timestamp - lastTimestamp
+            } else {
+                0L
+            }
             val updated = current.copy(
-                weatherHistory = current.weatherHistory + snapshot
+                weatherHistory = current.weatherHistory + snapshot.copy(intervalMs = interval)
             )
             preferences[KEY_MEMORY] = json.encodeToString(PerceptionMemory.serializer(), updated)
         }

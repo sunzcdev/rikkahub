@@ -68,7 +68,6 @@ import me.rerere.rikkahub.ui.pages.chat.ConversationListVM
 import me.rerere.rikkahub.utils.navigateToChatPage
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
-import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -162,28 +161,12 @@ fun ChatListTab(modifier: Modifier = Modifier) {
             // 唧唧未读提示
             val jijiNotificationManager: JijiNotificationManager = koinInject()
             val jijiUnreadCount = remember { mutableIntStateOf(jijiNotificationManager.getUnreadCount()) }
-            val jijiLastMessage = remember { mutableStateOf(jijiNotificationManager.getLastMessagePreview() ?: "") }
 
             LaunchedEffect(Unit) {
                 while (isActive) {
                     jijiUnreadCount.intValue = jijiNotificationManager.getUnreadCount()
-                    jijiLastMessage.value = jijiNotificationManager.getLastMessagePreview() ?: ""
                     kotlinx.coroutines.delay(2000)
                 }
-            }
-
-            if (jijiUnreadCount.intValue > 0) {
-                JijiUnreadRow(
-                    unreadCount = jijiUnreadCount.intValue,
-                    lastMessage = jijiLastMessage.value,
-                    onClick = {
-                        jijiNotificationManager.clearUnread()
-                        val convId = jijiNotificationManager.getConversationId()
-                        if (convId != null) {
-                            navigateToChatPage(navController, Uuid.parse(convId))
-                        }
-                    },
-                )
             }
 
             ConversationList(
@@ -191,11 +174,15 @@ fun ChatListTab(modifier: Modifier = Modifier) {
                 conversations = conversations,
                 conversationJobs = emptyList(),
                 assistants = settingsState.assistants,
+                jijiUnreadCount = jijiUnreadCount.intValue,
                 listState = conversationListState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
                 onClick = { conversation ->
+                    if (conversation.id.toString() == "00000000-0000-4000-a000-000000000002") {
+                        jijiNotificationManager.clearUnread()
+                    }
                     navigateToChatPage(navController, conversation.id)
                 },
                 onDelete = { conversation ->
@@ -274,66 +261,5 @@ fun ChatListTab(modifier: Modifier = Modifier) {
                 }
             }
         )
-    }
-}
-
-@Composable
-private fun JijiUnreadRow(
-    unreadCount: Int,
-    lastMessage: String,
-    onClick: () -> Unit,
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-        ),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = HugeIcons.Notification03,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp),
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "唧唧",
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Badge(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ) {
-                        Text(
-                            text = if (unreadCount > 99) "99+" else unreadCount.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    }
-                }
-                if (lastMessage.isNotBlank()) {
-                    Text(
-                        text = lastMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
     }
 }

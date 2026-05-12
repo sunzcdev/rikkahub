@@ -1,10 +1,16 @@
 package me.rerere.common.android
 
+import android.content.Context
 import android.util.Log as AndroidLog
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private const val MAX_RECENT_LOGS = 2000
+private const val LOG_FILE_MAX_SIZE = 5 * 1024 * 1024L  // 5MB per file, 保留最近的3份
 
 @Serializable
 sealed class LogEntry {
@@ -45,6 +51,41 @@ sealed class LogEntry {
  */
 object Logging {
     private val recentLogs = arrayListOf<LogEntry>()
+    private var logDir: File? = null
+
+    /** 初始化日志文件目录（在 Application.onCreate 中调用） */
+    fun init(context: Context) {
+        logDir = File(context.filesDir, "logs").also { it.mkdirs() }
+        // 清理旧日志，只保留最近 3 个文件
+        cleanupOldLogFiles()
+    }
+
+    /** 获取日志文件列表（按修改时间倒序） */
+    fun getLogFiles(): List<File> {
+        return logDir?.listFiles()
+            ?.filter { it.name.endsWith(".log") }
+            ?.sortedByDescending { it.lastModified() }
+            ?: emptyList()
+    }
+
+    /** 获取当前日志写入的文件路径 */
+    fun getCurrentLogFile(): File? {
+        val dir = logDir ?: return null
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        return File(dir, "rikkahub_$today.log")
+    }
+
+    private fun cleanupOldLogFiles() {
+        val dir = logDir ?: return
+        val files = dir.listFiles()
+            ?.filter { it.name.endsWith(".log") }
+            ?.sortedByDescending { it.lastModified() }
+            ?: return
+        // 保留最近 3 个文件，删更旧的
+        if (files.size > 3) {
+            files.drop(3).forEach { it.delete() }
+        }
+    }
 
     // ── 便捷方法：替代 android.util.Log ──
 
@@ -109,6 +150,8 @@ object Logging {
                 recentLogs.removeLastOrNull()
             }
         }
+        // 写入文件
+        writeToFile(entry)
     }
 
     fun getRecentLogs(): List<LogEntry> {
@@ -129,10 +172,38 @@ object Logging {
         }
     }
 
+    /** 写入一条日志到文件 */
+    private fun writeToFile(entry: LogEntry) {
+        val file = getCurrentLogFile() ?: return
+
+        // 超过大小上限则滚动：重命名为 .old（用 next available 后缀）
+        if (file.length() > LOG_FILE_MAX_SIZE) {
+            var seq = 1
+            while (File(file.parentFile, "${file.nameWithoutExtension}.$seq.log").exists()) {
+                seq++
+            }
+            file.renameTo(File(file.parentFile, "${file.nameWithoutExtension}.$seq.log"))
+        }
+
+        val time = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.getDefault())
+            .format(Date(entry.timestamp))
+        val line = when (entry) {
+            is LogEntry.TextLog ->
+                "$time ${entry.level}/${entry.tag}: ${entry.message}\n"
+            is LogEntry.RequestLog ->
+                "$time ${entry.method} ${entry.url} [${entry.responseCode ?: "?"}] ${entry.durationMs?.let { "${it}ms" } ?: ""}\n"
+        }
+        file.appendText(line)
+    }
+
     fun clear() {
         synchronized(recentLogs) {
             recentLogs.clear()
         }
+        // 同时清理日志文件
+        logDir?.listFiles()
+            ?.filter { it.name.endsWith(".log") }
+            ?.forEach { it.delete() }
         AndroidLog.d("Logging", "Log buffer cleared")
     }
 

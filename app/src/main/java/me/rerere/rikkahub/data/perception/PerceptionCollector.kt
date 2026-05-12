@@ -31,26 +31,37 @@ class PerceptionCollector(
 
     /**
      * 启动采集器（运行在提供的协程作用域中）
+     * @param entropyEnabled 熵驱动模式：间隔随机化 + 同数据跳过
      */
-    fun start(scope: CoroutineScope) {
+    fun start(scope: CoroutineScope, entropyEnabled: Boolean = false) {
         stop()
         collectorJob = scope.launch {
-            Logging.i(TAG, "Perception collector started")
-            // 先采集一次
-            collectLocationOnce()
-            // 两个并行循环（内联，避免 isActive 问题）
+            Logging.i(TAG, "Perception collector started${if (entropyEnabled) " (entropy)" else ""}")
+            // 先采集一次（force=true 确保首次必写入）
+            collectLocationOnce(force = true)
+            // 两个并行循环
             launch {
                 while (isActive) {
-                    delay(LOCATION_INTERVAL_MS)
-                    collectLocationOnce()
+                    val delayMs = if (entropyEnabled) {
+                        (LOCATION_INTERVAL_MS * (0.8 + kotlin.random.Random.nextFloat() * 0.4)).toLong()
+                    } else {
+                        LOCATION_INTERVAL_MS
+                    }
+                    delay(delayMs)
+                    collectLocationOnce(force = !entropyEnabled)
                 }
             }
             launch {
                 // 天气第一次等 30 秒，给定位初始化留时间
                 delay(30_000)
                 while (isActive) {
-                    collectWeatherOnce()
-                    delay(WEATHER_INTERVAL_MS)
+                    val delayMs = if (entropyEnabled) {
+                        (WEATHER_INTERVAL_MS * (0.8 + kotlin.random.Random.nextFloat() * 0.4)).toLong()
+                    } else {
+                        WEATHER_INTERVAL_MS
+                    }
+                    delay(delayMs)
+                    collectWeatherOnce(force = !entropyEnabled)
                 }
             }
         }

@@ -72,8 +72,15 @@ class JijiLocationProvider(
         if (result != null) {
             cachedLocation = result
             cachedTime = now
+            return result
         }
-        return result
+
+        // AMap 失败时返回过期缓存（有数据总比没数据好，保持轨迹连续性）
+        if (cachedLocation != null) {
+            Logging.d(TAG, "AMap failed, returning stale cache: ${cachedLocation?.city}")
+            return cachedLocation
+        }
+        return null
     }
 
     /**

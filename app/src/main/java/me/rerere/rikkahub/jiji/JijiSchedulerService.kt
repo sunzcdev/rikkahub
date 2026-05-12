@@ -141,15 +141,15 @@ class JijiSchedulerService : Service(), CoroutineScope {
 
     private fun startCheckCycle() {
         checkJob?.cancel()
-        // 启动感知采集器
-        perceptionManager.collector.start(this)
         checkJob = launch {
-            Logging.i(TAG, "Check cycle started")
+            val config = jijiConfigStore.getConfig()
+            // 启动感知采集器（传入熵驱动标志）
+            perceptionManager.collector.start(this, config.entropyEnabled)
+            Logging.i(TAG, "Check cycle started (entropy=${config.entropyEnabled})")
             while (isActive) {
                 runCheckCycle()
-                val config = jijiConfigStore.getConfig()
-                Logging.d(TAG, "Cycle done, next check in ${config.checkIntervalMinutes}min")
-                delay(config.checkIntervalMinutes * 60 * 1000L)
+                val currentConfig = jijiConfigStore.getConfig()
+                delay(currentConfig.checkIntervalMinutes * 60 * 1000L)
             }
         }
     }
@@ -212,8 +212,7 @@ class JijiSchedulerService : Service(), CoroutineScope {
                 // 提醒类偏差无视冷却期和每日上限
                 val isReminder = bestDeviation.type == DeviationType.UPCOMING_EVENT
                 val canProceed = isReminder || (
-                        updatedState.proactiveCount < config.dailyProactiveLimit &&
-                                (elapsed >= cooldownMs || updatedState.lastProactiveTime == 0L)
+                        elapsed >= cooldownMs || updatedState.lastProactiveTime == 0L
                         )
 
                 if (canProceed) {
@@ -246,6 +245,25 @@ class JijiSchedulerService : Service(), CoroutineScope {
                 }
             } else if (bestDeviation != null) {
                 Logging.d(TAG, "Skipped: ${bestDeviation.type} rel=${bestDeviation.relevance} (< 0.5)")
+            } else if (config.entropyEnabled) {
+                // 熵驱动：无偏差时随机搭话（~30% 概率 + 用户之前有互动过才触发）
+                val interactionExists = context.lastInteractionMinutes < 9999
+                if (interactionExists && kotlin.random.Random.nextFloat() < 0.3f) {
+                    Logging.d(TAG, "Entropy-driven: random chat triggered")
+                    val lastTopic = getJijiRecentTopic()
+                    val message = generateWithAI(
+                        Deviation(DeviationType.LONG_SILENCE, "熵驱动随机搭话", 0.5f, null),
+                        context, lastTopic, memoryTexts,
+                    ) ?: generateProactiveMessage(
+                        Deviation(DeviationType.LONG_SILENCE, "熵驱动随机搭话", 0.5f, null),
+                        context, lastTopic, memoryTexts,
+                    )
+                    val conversationIdStr = ensureConversationAndAddMessage(message)
+                    jijiNotificationManager.sendProactiveNotification(message, conversationIdStr)
+                    Logging.i(TAG, "Jiji entropy-driven: $message")
+                } else {
+                    Logging.d(TAG, "Entropy skipped (roll=${if (interactionExists) "no hit" else "no interaction yet"})")
+                }
             } else {
                 Logging.d(TAG, "No deviation detected (lastInteraction=${context.lastInteractionMinutes}min)")
             }

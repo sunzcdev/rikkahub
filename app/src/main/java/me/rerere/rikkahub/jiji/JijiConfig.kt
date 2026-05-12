@@ -17,8 +17,10 @@ data class JijiConfig(
     val weatherEnabled: Boolean = false,  // 测试阶段关掉天气，避免网络超时
     /** OpenWeatherMap API Key */
     val openWeatherApiKey: String = "",
-    /** 每日主动搭话上限 */
-    val dailyProactiveLimit: Int = 100,
+    /** 熵驱动开关（开启后随机搭话，搭话不限次数） */
+    val entropyEnabled: Boolean = true,
+    /** 每日主动搭话上限（Int.MAX_VALUE 即不限） */
+    val dailyProactiveLimit: Int = Int.MAX_VALUE,
     /** 推送冷却时间（分钟） */
     val cooldownMinutes: Int = 0,  // 测试阶段：无冷却
 ) {

@@ -43,6 +43,7 @@ data class PerceptionRecord(
     val city: String,
     val detail: String,     // 具体数据描述
     val subtitle: String = "", // 第二行补充信息
+    val intervalMs: Long = 0,  // 距上次采集间隔
     val color: Color,       // 类型色标
 )
 
@@ -82,6 +83,7 @@ fun SettingPerceptionHistoryPage() {
                     city = loc.city,
                     detail = locDetail,
                     subtitle = locSubtitle,
+                    intervalMs = loc.intervalMs,
                     color = Color(0xFF4CAF50),
                 )
             )
@@ -100,6 +102,7 @@ fun SettingPerceptionHistoryPage() {
                     timestamp = w.timestamp,
                     city = w.city,
                     detail = "${w.condition} / $tempDesc / 湿度${w.humidity}%",
+                    intervalMs = w.intervalMs,
                     color = Color(0xFF2196F3),
                 )
             )
@@ -169,6 +172,18 @@ fun SettingPerceptionHistoryPage() {
 @Composable
 private fun RecordCard(record: PerceptionRecord) {
     val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+
+    fun formatInterval(ms: Long): String {
+        if (ms <= 0) return "首条"
+        val seconds = ms / 1000
+        val minutes = seconds / 60
+        val hours = minutes / 60
+        return when {
+            hours > 0 -> "+${hours}h${minutes % 60}min"
+            minutes > 0 -> "+${minutes}min"
+            else -> "+${seconds}s"
+        }
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -200,11 +215,19 @@ private fun RecordCard(record: PerceptionRecord) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Text(
-                    text = sdf.format(Date(record.timestamp)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = formatInterval(record.intervalMs),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = sdf.format(Date(record.timestamp)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
