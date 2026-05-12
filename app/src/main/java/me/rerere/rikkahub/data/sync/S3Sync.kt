@@ -291,6 +291,18 @@ class S3Sync(
         }
 
         Logging.i(TAG, "restoreFromBackupFile: Restore completed successfully")
+
+        // Force Room to reconnect after close+write cycle
+        if (config.items.contains(S3Config.BackupItem.DATABASE)) {
+            runCatching {
+                kotlinx.coroutines.runBlocking {
+                    database.conversationDao().countAll()
+                }
+                Logging.i(TAG, "restoreFromBackupFile: Room connection re-established")
+            }.onFailure { e ->
+                Logging.e(TAG, "restoreFromBackupFile: Failed to re-establish Room connection", e)
+            }
+        }
     }
 
     private fun addFileToZip(zipOut: ZipOutputStream, file: File, entryName: String) {
