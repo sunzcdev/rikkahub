@@ -59,7 +59,6 @@ class JijiSchedulerService : Service(), CoroutineScope {
 
     // DI
     private val perceptionManager: PerceptionManager by inject()
-    private val deviationDetector: DeviationDetector by inject()
     private val baselineManager: BaselineManager by inject()
     private val jijiNotificationManager: JijiNotificationManager by inject()
     private val memoryRepository: MemoryRepository by inject()
@@ -67,6 +66,9 @@ class JijiSchedulerService : Service(), CoroutineScope {
     private val jijiConfigStore: JijiConfigStore by inject()
     private val settingsStore: SettingsStore by inject()
     private val providerManager: me.rerere.ai.provider.ProviderManager by inject()
+
+    /** 滚动基线引擎（EWMA 流式检测，替代旧偏差检测器） */
+    private val baselineEngine = RollingBaselineEngine()
 
     override val coroutineContext: CoroutineContext = SupervisorJob() + Dispatchers.IO
     private var checkJob: Job? = null
@@ -162,110 +164,128 @@ class JijiSchedulerService : Service(), CoroutineScope {
 
     /**
      * 执行一次完整的检测循环
+     *
+     * 新范式（v2 滚动基线）：
+     *   采集所有信息流 → 更新 EWMA 基线 → 检查整体状态是否从稳定跃迁到新稳定
+     *   如果跃迁完成 → 推送
      */
     private suspend fun runCheckCycle() {
         try {
             val config = jijiConfigStore.getConfig()
             if (!config.enabled) return
 
-            val timeDesc = perceptionManager.getTimeDescription()
-            if (deviationDetector.isInDoNotDisturb(timeDesc)) return
+            // 免打扰检查（23:00~07:00）
+            val now = java.util.Calendar.getInstance()
+            val hour = now.get(java.util.Calendar.HOUR_OF_DAY)
+            if (hour >= 23 || hour < 7) {
+                Logging.d(TAG, "In DND hours, skipping")
+                return
+            }
 
             // 读取唧唧的记忆
             val memories = memoryRepository.getGlobalMemories()
             val memoryTexts = memories.map { it.content }
 
-            // 感知上下文
+            // 感知上下文（用于 AI 生成推送文案）
+            val lastInteractionMinutes = getLastInteractionMinutes()
             val context = perceptionManager.collectContext(
                 config = config,
-                lastInteractionMinutes = getLastInteractionMinutes(),
+                lastInteractionMinutes = lastInteractionMinutes,
                 recentMemories = memoryTexts,
             )
 
-            // 基线 + 偏差检测
-            val baseline = baselineManager.extractBaseline(memoryTexts)
-            val dailyState = jijiConfigStore.getDailyState()
-            val deviations = deviationDetector.detect(
-                context = context, baseline = baseline,
-                lastDeviationType = dailyState.lastDeviationType,
-            )
+            // === 信息流采集 ===
+            // 1. 聊天流：最后一次互动距今多少分钟，归一化到 0.0~1.0
+            val chatActivity = 1.0 - minOf(lastInteractionMinutes / 30.0, 1.0)
+            baselineEngine.updateStream(RollingBaselineEngine.StreamName.CHAT, chatActivity)
 
-            // 追加记忆提醒类偏差
-            val reminderDeviation = detectReminderFromMemory(memoryTexts)
-            val allDeviations = if (reminderDeviation != null) {
-                listOf(reminderDeviation) + deviations
-            } else {
-                deviations
+            // 2. 天气流（如果有）
+            val weather = context.weather
+            if (weather != null) {
+                val tempNorm = minOf(weather.temperature.toDouble() / 50.0, 1.0)
+                baselineEngine.updateStream(RollingBaselineEngine.StreamName.WEATHER, tempNorm)
             }
 
-            val bestDeviation = allDeviations.firstOrNull()
-            if (bestDeviation != null && bestDeviation.relevance >= 0.5f) {
+            // 3. 位置流（如果有）
+            val location = context.location
+            if (location != null) {
+                // 简单归一化：不同城市 = 1.0，同一城市 = 0.3，无位置变化 = 上次值
+                val locValue = if (location.city.isNotEmpty()) 1.0 else 0.5
+                baselineEngine.updateStream(RollingBaselineEngine.StreamName.LOCATION, locValue)
+            }
+
+            // 4. 时间流：一天中的位置（0~1）
+            val timeValue = hour / 24.0
+            baselineEngine.updateStream(RollingBaselineEngine.StreamName.TIME, timeValue)
+
+            // 5. 设备流：有交互活动时视为亮屏
+            val deviceActive = if (lastInteractionMinutes < 5) 1.0 else 0.0
+            baselineEngine.updateStream(RollingBaselineEngine.StreamName.DEVICE, deviceActive)
+
+            // === 滚动基线检测 ===
+            val pushEvent = baselineEngine.checkTransition()
+
+            // === 推送触发 ===
+            if (pushEvent != null) {
+                Logging.i(TAG, "Push triggered: ${pushEvent.reason}")
+
+                // 读取唧唧会话的最后几条消息，提取话题
+                val lastTopic = getJijiRecentTopic()
+
+                // 构造兼容旧 Deviation 结构的触发原因（用于 AI 生成）
+                val pushDeviation = Deviation(
+                    type = DeviationType.PUSH_EVENT,
+                    description = pushEvent.reason,
+                    relevance = pushEvent.aggregateDeviation.toFloat().coerceAtMost(1.0f),
+                )
+
+                // 优先用 AI 生成，规则方案作为降级
+                val message = generateWithAI(pushDeviation, context, lastTopic, memoryTexts)
+                    ?: generateProactiveMessage(pushDeviation, context, lastTopic, memoryTexts)
+
+                // 写入唧唧会话
+                val conversationIdStr = ensureConversationAndAddMessage(message)
+
+                // 发系统通知
+                jijiNotificationManager.sendProactiveNotification(message, conversationIdStr)
+
+                // 更新每日统计（仅统计，不再限制推送） 
                 val today = getTodayDate()
+                val dailyState = jijiConfigStore.getDailyState()
                 if (dailyState.date != today) {
                     jijiConfigStore.resetDailyState(today)
                 }
-
                 val updatedState = jijiConfigStore.getDailyState()
-                val cooldownMs = config.cooldownMinutes * 60 * 1000L
-                val elapsed = System.currentTimeMillis() - updatedState.lastProactiveTime
-
-                // 提醒类偏差无视冷却期和每日上限
-                val isReminder = bestDeviation.type == DeviationType.UPCOMING_EVENT
-                val canProceed = isReminder || (
-                        elapsed >= cooldownMs || updatedState.lastProactiveTime == 0L
-                        )
-
-                if (canProceed) {
-                    // 读取唧唧会话的最后几条消息，提取话题
-                    val lastTopic = getJijiRecentTopic()
-                    
-                    // 优先用 AI 生成，规则方案作为降级
-                    val message = generateWithAI(bestDeviation, context, lastTopic, memoryTexts)
-                        ?: generateProactiveMessage(bestDeviation, context, lastTopic, memoryTexts)
-
-                    // 写入唧唧会话（创建一条 ASSISTANT 消息）
-                    val conversationIdStr = ensureConversationAndAddMessage(message)
-
-                    // 发系统通知（携带 conversationId）
-                    jijiNotificationManager.sendProactiveNotification(message, conversationIdStr)
-
-                    // 更新日状态
-                    jijiConfigStore.updateDailyState(
-                        JijiDailyState(
-                            date = today,
-                            proactiveCount = updatedState.proactiveCount + 1,
-                            lastProactiveTime = System.currentTimeMillis(),
-                            lastDeviationType = "", // 测试阶段清空类型去重，以便每次循环都能推送
-                        )
+                jijiConfigStore.updateDailyState(
+                    JijiDailyState(
+                        date = today,
+                        proactiveCount = updatedState.proactiveCount + 1,
+                        lastProactiveTime = System.currentTimeMillis(),
+                        lastDeviationType = pushEvent.triggerStream,
                     )
+                )
 
-                    Logging.i(TAG, "Jiji proactive: ${bestDeviation.description} -> $message")
-                } else if (bestDeviation != null) {
-                    Logging.d(TAG, "Deferred: ${bestDeviation.type} rel=${bestDeviation.relevance} (cooldown/daily limit)")
-                }
-            } else if (bestDeviation != null) {
-                Logging.d(TAG, "Skipped: ${bestDeviation.type} rel=${bestDeviation.relevance} (< 0.5)")
+                Logging.i(TAG, "Jiji v2 proactive: ${pushEvent.reason} -> $message")
             } else if (config.entropyEnabled) {
-                // 熵驱动：无偏差时随机搭话（~30% 概率 + 用户之前有互动过才触发）
-                val interactionExists = context.lastInteractionMinutes < 9999
-                if (interactionExists && kotlin.random.Random.nextFloat() < 0.3f) {
+                // 熵驱动：无跃迁时偶尔随机搭话
+                if (lastInteractionMinutes < 9999 && kotlin.random.Random.nextFloat() < 0.3f) {
                     Logging.d(TAG, "Entropy-driven: random chat triggered")
                     val lastTopic = getJijiRecentTopic()
                     val message = generateWithAI(
-                        Deviation(DeviationType.LONG_SILENCE, "熵驱动随机搭话", 0.5f, null),
+                        Deviation(DeviationType.PUSH_EVENT, "熵驱动随机搭话", 0.5f, null),
                         context, lastTopic, memoryTexts,
                     ) ?: generateProactiveMessage(
-                        Deviation(DeviationType.LONG_SILENCE, "熵驱动随机搭话", 0.5f, null),
+                        Deviation(DeviationType.PUSH_EVENT, "熵驱动随机搭话", 0.5f, null),
                         context, lastTopic, memoryTexts,
                     )
                     val conversationIdStr = ensureConversationAndAddMessage(message)
                     jijiNotificationManager.sendProactiveNotification(message, conversationIdStr)
                     Logging.i(TAG, "Jiji entropy-driven: $message")
                 } else {
-                    Logging.d(TAG, "Entropy skipped (roll=${if (interactionExists) "no hit" else "no interaction yet"})")
+                    Logging.d(TAG, "Entropy skipped (roll=${if (lastInteractionMinutes < 9999) "no hit" else "no interaction yet"})")
                 }
             } else {
-                Logging.d(TAG, "No deviation detected (lastInteraction=${context.lastInteractionMinutes}min)")
+                Logging.d(TAG, "No transition detected")
             }
         } catch (e: Exception) {
             Logging.e(TAG, "Jiji check cycle failed", e)
@@ -417,6 +437,7 @@ class JijiSchedulerService : Service(), CoroutineScope {
                 DeviationType.PREFERENCE_GAP -> "用户行为与偏好不符（如户外爱好者却在宅家）"
                 DeviationType.POSITIVE_OPPORTUNITY -> "好天气适合外出活动"
                 DeviationType.UPCOMING_EVENT -> "用户记忆中有即将到来的事件"
+                DeviationType.PUSH_EVENT -> deviation.description
             }
 
             // 短期感知记忆
@@ -707,6 +728,18 @@ $perceptionText
                     greeting = "",
                     mentionWeather = false,
                     mentionTopic = false,
+                    mentionTime = false,
+                    mentionLocation = false,
+                    suggestion = "",
+                )
+            }
+
+            // ---- 滚动基线推送（v2） ----
+            DeviationType.PUSH_EVENT -> {
+                Strategy(
+                    greeting = deviation.description,
+                    mentionWeather = weatherDesc.isNotEmpty(),
+                    mentionTopic = topicStr.isNotEmpty(),
                     mentionTime = false,
                     mentionLocation = false,
                     suggestion = "",

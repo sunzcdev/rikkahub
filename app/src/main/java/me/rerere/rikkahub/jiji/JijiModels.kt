@@ -65,4 +65,5 @@ enum class DeviationType {
     PREFERENCE_GAP,
     POSITIVE_OPPORTUNITY,
     UPCOMING_EVENT,
+    PUSH_EVENT,
 }
